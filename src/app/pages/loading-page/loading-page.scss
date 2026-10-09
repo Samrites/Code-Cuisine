@@ -1,0 +1,254 @@
+:host {
+  display: block;
+  min-height: 100dvh;
+  background: #396039;
+}
+
+.loading-header {
+  width: min(100%, var(--page-max-width));
+  margin: 0 auto;
+  padding: 40px 68px 0;
+  box-sizing: border-box;
+}
+
+.loading-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 142px;
+  height: 48px;
+  text-decoration: none;
+}
+
+.loading-brand-media {
+  display: block;
+  width: 142px;
+  height: 48px;
+  pointer-events: none;
+}
+
+.loading-brand-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 142px;
+  height: 48px;
+  color: #faf0e6;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.loading-page {
+  display: grid;
+  place-items: center;
+  min-height: calc(100dvh - 88px);
+  width: min(100%, var(--page-max-width));
+  margin: 0 auto;
+  padding: 40px 68px 68px;
+  box-sizing: border-box;
+}
+
+.loading-content {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  width: min(100%, 520px);
+  gap: 24px;
+}
+
+.loading-visual {
+  display: block;
+  width: 253px;
+  height: 309px;
+  max-width: 100%;
+  object-fit: contain;
+  opacity: 1;
+  border-radius: 20px;
+  background: #c4d0c4;
+}
+
+.loading-title {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 0;
+  color: #faf0e6;
+  font-family: 'Ubuntu', sans-serif;
+  font-size: clamp(2rem, 4vw, 48px);
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  text-align: center;
+}
+
+.loading-title-dots {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.3em;
+}
+
+.loading-title-dot {
+  display: inline-block;
+  width: 0.33em;
+  opacity: 1;
+  animation: loading-dot-fade 1.5s steps(1, end) infinite;
+}
+
+.loading-title-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loading-title-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes loading-dot-fade {
+  0%,
+  20% {
+    opacity: 1;
+  }
+
+  40%,
+  60% {
+    opacity: 0;
+  }
+
+  80%,
+  100% {
+    opacity: 1;
+  }
+}
+
+.loading-result,
+.loading-error {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  max-width: 420px;
+  text-align: center;
+}
+
+.loading-result-label,
+.loading-result-meta,
+.loading-error-message,
+.loading-action-link,
+.loading-action-button {
+  margin: 0;
+  color: #faf0e6;
+  font-family: 'Quicksand', sans-serif;
+  font-style: normal;
+}
+
+.loading-result-label,
+.loading-result-meta {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.loading-result-title {
+  margin: 0;
+  color: #faf0e6;
+  font-family: 'Ubuntu', sans-serif;
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.05;
+  text-align: center;
+}
+
+.loading-result-description,
+.loading-error-message {
+  margin: 0;
+  color: #faf0e6;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 1.125rem;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.loading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.loading-action-button,
+.loading-action-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 22px;
+  border-radius: 999px;
+  box-sizing: border-box;
+  text-decoration: none;
+}
+
+.loading-action-button {
+  border: 0;
+  background: #faf0e6;
+  color: #1e5515;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.loading-action-button:hover {
+  background: #fae0c6;
+}
+
+.loading-action-link {
+  border: 1px solid rgb(250 240 230 / 45%);
+  color: #faf0e6;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.loading-action-link:hover {
+  background: rgb(250 240 230 / 10%);
+}
+
+@media (max-width: 768px) {
+  .loading-header {
+    padding: 24px 20px 0;
+  }
+
+  .loading-brand,
+  .loading-brand-media,
+  .loading-brand-fallback {
+    width: 118px;
+    height: auto;
+  }
+
+  .loading-page {
+    padding: 32px 20px 40px;
+  }
+
+  .loading-content {
+    width: 100%;
+  }
+
+  .loading-visual {
+    width: min(253px, 100%);
+    height: auto;
+    aspect-ratio: 253 / 309;
+  }
+
+  .loading-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .loading-action-button,
+  .loading-action-link {
+    width: min(100%, 280px);
+  }
+}
