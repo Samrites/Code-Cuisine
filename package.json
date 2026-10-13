@@ -4,10 +4,12 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build && cp public/.htaccess dist/code-cuisine/browser/.htaccess",
+    "build": "ng build && node scripts/copy-htaccess.cjs",
     "build:ftp": "ng build --base-href /angular-projects/code-cuisine/",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "test:regressions": "node scripts/check-regressions.cjs",
+    "test:n8n": "node scripts/check-n8n-workflow.cjs"
   },
   "private": true,
   "packageManager": "npm@11.6.2",

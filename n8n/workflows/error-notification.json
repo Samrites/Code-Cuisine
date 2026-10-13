@@ -1,0 +1,53 @@
+{
+  "name": "Code a Cuisine - Error Notification",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "13f3e8c9-b2be-4453-8381-3d7fd2457fa6",
+      "name": "Workflow Error Trigger"
+    },
+    {
+      "parameters": {
+        "fromEmail": "samrites2008@yahoo.com",
+        "toEmail": "samrites2008@yahoo.com",
+        "subject": "={{ 'Code a Cuisine error: ' + ($json.workflow?.name || 'workflow') }}",
+        "emailFormat": "text",
+        "text": "={{ 'Code a Cuisine encountered an error.\\n\\nWorkflow: ' + ($json.workflow?.name || '-') + '\\nExecution ID: ' + ($json.execution?.id || '-') + '\\nLast node: ' + ($json.execution?.lastNodeExecuted || '-') + '\\nError: ' + ($json.execution?.error?.message || $json.trigger?.error?.message || 'Unknown error') + '\\n\\nPlease check the execution in n8n.' }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        320,
+        0
+      ],
+      "id": "ba71247d-64e7-4deb-9724-a585d4d51daa",
+      "name": "Email Samrawit About Error"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Workflow Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Email Samrawit About Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

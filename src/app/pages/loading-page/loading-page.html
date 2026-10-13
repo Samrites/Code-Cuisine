@@ -14,12 +14,7 @@
 <main class="loading-page" aria-label="Loading page">
   <section class="loading-content" aria-labelledby="loading-title">
     @if (canShowLoader()) {
-      <img
-        class="loading-visual"
-        [src]="loadingVisualSrc"
-        alt=""
-        aria-hidden="true"
-      />
+      <img class="loading-visual" [src]="loadingVisualSrc" alt="" aria-hidden="true" />
       <h1 class="loading-title" id="loading-title">
         <span>Generating</span>
         <span class="loading-title-dots" aria-hidden="true">
@@ -42,13 +37,26 @@
 
     @if (generationStatus() === 'error') {
       <div class="loading-error" aria-live="assertive">
+        <h1 class="loading-title" id="loading-title">
+          {{ dailyLimitReached() ? 'Daily limit reached' : 'Generation stopped' }}
+        </h1>
         <p class="loading-error-message">
           {{ generationErrorMessage() ?? 'The recipe could not be generated.' }}
         </p>
+        @if (dailyLimitReached()) {
+          <p class="loading-error-message">
+            Your daily generation allowance is used up. Try again after the daily reset, or browse
+            saved recipes in the cookbook.
+          </p>
+        }
         <div class="loading-actions">
-          <button class="loading-action-button" type="button" (click)="retryGeneration()">
-            Try again
-          </button>
+          @if (!dailyLimitReached()) {
+            <button class="loading-action-button" type="button" (click)="retryGeneration()">
+              Try again
+            </button>
+          } @else {
+            <a class="loading-action-link" routerLink="/cookbook">Go to cookbook</a>
+          }
           <a class="loading-action-link" routerLink="/preferences">Back to preferences</a>
         </div>
       </div>

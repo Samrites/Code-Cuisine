@@ -20,24 +20,46 @@
 
 <main class="cookbook-category-page" aria-label="Cookbook category page">
   <section class="cookbook-category-shell">
+    <div class="cookbook-category-actions">
+      <a routerLink="/generate-recipe">Generate a recipe</a>
+    </div>
+
     <div class="cookbook-category-hero" aria-hidden="true">
       <img
         class="cookbook-category-hero-desktop"
         [src]="category().heroSrc"
-        width="1330"
-        height="281"
+        [attr.width]="category().heroWidth"
+        [attr.height]="category().heroHeight"
         alt=""
       />
       <img
         class="cookbook-category-hero-mobile"
         [src]="category().mobileHeroSrc"
-        width="320"
-        height="88"
+        [attr.width]="category().mobileHeroWidth"
+        [attr.height]="category().mobileHeroHeight"
         alt=""
       />
     </div>
 
     <section class="cookbook-category-recipes" [attr.aria-label]="category().title">
+      @if (cookbookStatus() === 'loading') {
+        <p class="cookbook-category-message" role="status">Loading recipes...</p>
+      } @else if (cookbookStatus() === 'unconfigured') {
+        <p class="cookbook-category-message" role="status">
+          The cookbook is not connected yet. Saved recipes will appear here once it is connected.
+        </p>
+      } @else if (cookbookStatus() === 'error') {
+        <div class="cookbook-category-message" role="status">
+          <p>Recipes could not be loaded. Please try again.</p>
+          <button type="button" (click)="reloadRecipes()">Try again</button>
+        </div>
+      } @else if (!visibleRecipes().length) {
+        <div class="cookbook-category-message" role="status">
+          <p>No recipes in {{ category().title }} yet.</p>
+          <a routerLink="/generate-recipe">Generate a recipe</a>
+        </div>
+      }
+
       @for (recipe of visibleRecipes(); track $index) {
         <article
           class="cookbook-category-row"

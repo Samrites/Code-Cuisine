@@ -29,6 +29,15 @@ export interface RecipeNutrition {
   total: RecipeNutritionFacts;
 }
 
+/** Preserves AI preparation metadata for chronology, parallel work and helper assignments. */
+export interface RecipePreparationStep {
+  title: string;
+  description: string;
+  assignedCook: number;
+  parallelizable: boolean;
+  durationMinutes: number | null;
+}
+
 export interface GeneratedRecipe {
   id?: string;
   source?: 'library' | 'generated';
@@ -44,6 +53,7 @@ export interface GeneratedRecipe {
   extraIngredients?: string[];
   ingredients: string[];
   steps: string[];
+  stepDetails?: RecipePreparationStep[];
   nutrition?: RecipeNutrition | null;
 }
 

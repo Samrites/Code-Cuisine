@@ -10,14 +10,22 @@ type CookbookCategoryConfig = {
   title: string;
   heroSrc: string;
   mobileHeroSrc: string;
+  heroWidth: number;
+  heroHeight: number;
+  mobileHeroWidth: number;
+  mobileHeroHeight: number;
 };
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 15;
 const DEFAULT_CATEGORY = {
   slug: 'italian',
   title: 'Italian cuisine',
   heroSrc: 'Icons/property-italian.svg',
   mobileHeroSrc: 'Icons/property-italian-mobile.svg',
+  heroWidth: 1146,
+  heroHeight: 144,
+  mobileHeroWidth: 340,
+  mobileHeroHeight: 94,
 } satisfies CookbookCategoryConfig;
 
 const COOKBOOK_CATEGORY_CONFIGS: CookbookCategoryConfig[] = [
@@ -26,36 +34,60 @@ const COOKBOOK_CATEGORY_CONFIGS: CookbookCategoryConfig[] = [
     title: 'Italian cuisine',
     heroSrc: 'Icons/property-italian.svg',
     mobileHeroSrc: 'Icons/property-italian-mobile.svg',
+    heroWidth: 1146,
+    heroHeight: 144,
+    mobileHeroWidth: 340,
+    mobileHeroHeight: 94,
   },
   {
     slug: 'german',
     title: 'German cuisine',
     heroSrc: 'Icons/property-german.svg',
     mobileHeroSrc: 'Icons/property-german-mobile.svg',
+    heroWidth: 1143,
+    heroHeight: 151,
+    mobileHeroWidth: 341,
+    mobileHeroHeight: 91,
   },
   {
     slug: 'japanese',
     title: 'Japanese cuisine',
     heroSrc: 'Icons/property-japanese.svg',
     mobileHeroSrc: 'Icons/property-japanese-mobile.svg',
+    heroWidth: 1143,
+    heroHeight: 156,
+    mobileHeroWidth: 340,
+    mobileHeroHeight: 90,
   },
   {
     slug: 'gourmet',
     title: 'Gourmet cuisine',
     heroSrc: 'Icons/property-gourmet.svg',
     mobileHeroSrc: 'Icons/property-gourmet-mobile.svg',
+    heroWidth: 1143,
+    heroHeight: 165,
+    mobileHeroWidth: 342,
+    mobileHeroHeight: 90,
   },
   {
     slug: 'indian',
     title: 'Indian cuisine',
     heroSrc: 'Icons/property-indian.svg',
     mobileHeroSrc: 'Icons/property-indian-mobile.svg',
+    heroWidth: 1143,
+    heroHeight: 132,
+    mobileHeroWidth: 340,
+    mobileHeroHeight: 91,
   },
   {
     slug: 'fusion',
     title: 'Fusion cuisine',
     heroSrc: 'Icons/property-fusion.svg',
     mobileHeroSrc: 'Icons/property-fusion-mobile.svg',
+    heroWidth: 1143,
+    heroHeight: 132,
+    mobileHeroWidth: 340,
+    mobileHeroHeight: 91,
   },
 ];
 
@@ -70,12 +102,15 @@ export class CookbookCategoryPageComponent {
   private readonly router = inject(Router);
   private readonly recipeGeneration = inject(RecipeGenerationService);
   private readonly cookbookStore = inject(CookbookStoreService);
-  private readonly paramMap = toSignal(this.route.paramMap, { initialValue: this.route.snapshot.paramMap });
+  private readonly paramMap = toSignal(this.route.paramMap, {
+    initialValue: this.route.snapshot.paramMap,
+  });
   private readonly queryParamMap = toSignal(this.route.queryParamMap, {
     initialValue: this.route.snapshot.queryParamMap,
   });
 
   protected readonly pageSize = PAGE_SIZE;
+  protected readonly cookbookStatus = this.cookbookStore.loadStatus;
 
   protected readonly category = computed<CookbookCategoryConfig>(() => {
     const slug = this.paramMap().get('category') ?? '';
@@ -107,6 +142,11 @@ export class CookbookCategoryPageComponent {
   protected readonly pageNumbers = computed(() =>
     Array.from({ length: this.totalPages() }, (_, index) => index + 1),
   );
+
+  /** Retries loading the cookbook after a failed request. */
+  protected reloadRecipes(): void {
+    void this.cookbookStore.refreshRecipes();
+  }
 
   /** Resolves the visible meta tags shown on each category-row card. */
   protected recipeMetaTags(recipe: StoredCookbookRecipe): string[] {

@@ -26,10 +26,10 @@ export function isRecipeGenerationError(
 }
 
 /** Extracts a stable user-facing message from the webhook failure payload. */
-export function getRecipeGenerationErrorMessage(
-  response: RecipeGenerationErrorResponse,
-): string {
-  return readErrorMessage(response.error) ?? response.message ?? 'The recipe could not be generated.';
+export function getRecipeGenerationErrorMessage(response: RecipeGenerationErrorResponse): string {
+  return (
+    readErrorMessage(response.error) ?? response.message ?? 'The recipe could not be generated.'
+  );
 }
 
 /** Checks whether the backend returned exactly the required number of recipes. */
@@ -39,5 +39,5 @@ export function hasExpectedRecipeCount(recipes: GeneratedRecipe[], expectedCount
 
 /** Extracts a message from either a flat or structured error value. */
 function readErrorMessage(error: RecipeGenerationErrorResponse['error']): string | null {
-  return typeof error === 'string' ? null : error.message ?? null;
+  return typeof error === 'string' ? null : (error.message ?? null);
 }

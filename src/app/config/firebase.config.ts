@@ -34,7 +34,10 @@ export function getFirebaseConfig(): FirebaseWebConfig {
   return EMPTY_FIREBASE_CONFIG;
 }
 
-/** Checks whether all Firebase web configuration fields are populated. */
+/** Checks the fields required by Firestore without requiring optional Storage or Messaging settings. */
 export function hasFirebaseConfig(config: FirebaseWebConfig): boolean {
-  return Object.values(config).every((value) => value.trim().length > 0);
+  return [config.apiKey, config.authDomain, config.projectId].every(
+    (value) =>
+      typeof value === 'string' && value.trim().length > 0 && !value.trim().startsWith('your-'),
+  );
 }

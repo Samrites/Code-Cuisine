@@ -42,9 +42,7 @@ export class IngredientDraftStateService {
 
   /** Removes an ingredient draft entry from the current request state. */
   deleteIngredient(entryId: number): void {
-    this.ingredientEntries.update((entries) =>
-      entries.filter((entry) => entry.id !== entryId),
-    );
+    this.ingredientEntries.update((entries) => entries.filter((entry) => entry.id !== entryId));
   }
 
   /** Clears the current ingredient draft list after a successful recipe submission. */

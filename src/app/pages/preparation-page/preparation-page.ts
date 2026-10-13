@@ -34,40 +34,46 @@ export class PreparationPageComponent {
     typeof window !== 'undefined' ? window.matchMedia('(max-width: 768px)').matches : false,
   );
   /** Resolves how many cook labels should be shown for the current recipe. */
-  private readonly cookingPersons = computed(
-    () =>
-      Math.max(
-        1,
-        this.selectedRecipe()?.cookCount ??
-          this.recipeGeneration.lastUsedPreferences()?.persons ??
-          1,
-      ),
+  private readonly cookingPersons = computed(() =>
+    Math.max(
+      1,
+      this.selectedRecipe()?.cookCount ?? this.recipeGeneration.lastUsedPreferences()?.persons ?? 1,
+    ),
   );
   /** Selects the active recipe either from the explicit selection or the latest generated result list. */
   protected readonly selectedRecipe = computed(
-    () => this.recipeGeneration.selectedRecipe() ?? this.recipeGeneration.generatedRecipes()[0] ?? null,
+    () =>
+      this.recipeGeneration.selectedRecipe() ?? this.recipeGeneration.generatedRecipes()[0] ?? null,
   );
-  protected readonly backLinkLabel = this.source === 'cookbook' ? 'Back to cookbook' : 'Recipe results';
+  protected readonly backLinkLabel =
+    this.source === 'cookbook' ? 'Back to cookbook' : 'Recipe results';
   protected readonly backLinkTarget = this.source === 'cookbook' ? '/cookbook' : '/results';
   protected readonly backLinkAriaLabel =
     this.source === 'cookbook' ? 'Back to cookbook' : 'Back to recipe results';
   /** Builds the visible preference tags from the current recipe and the last submitted request. */
   protected readonly selectedPreferenceTags = computed(() =>
-    buildPreparationPreferenceTags(
-      this.selectedRecipe(),
-      this.recipeGeneration.lastUsedPreferences(),
-    ),
+    buildPreparationPreferenceTags(this.selectedRecipe()),
   );
   /** Formats nutritional values for the preparation sidebar without inventing fallback recipe data. */
   protected readonly nutritionFacts = computed(() =>
     buildNutritionFacts(this.selectedRecipe()?.nutrition?.perPortion ?? null),
   );
+  /** Calculates macro energy percentages and exposes actual per-portion and total nutrition. */
+  protected readonly macroNutrition = computed(() =>
+    buildMacroNutrition(this.selectedRecipe()?.nutrition ?? null),
+  );
+  /** Groups assigned preparation tasks by cook for the optional helper checklist. */
+  protected readonly helperTasks = computed(() =>
+    Array.from({ length: this.cookingPersons() }, (_, index) => ({
+      cook: index + 1,
+      label: AVAILABLE_COOK_LABELS[index],
+      tasks: this.preparationDirections().filter((step) => step.assignedCook === index + 1),
+    })),
+  );
   /** Exposes the formatted cook count for the header area. */
   protected readonly cookingPersonsLabel = computed(() => this.cookingPersons());
   /** Limits the visible cook labels to the number of active cooks. */
-  protected readonly cookLabelSources = computed(() =>
-    getCookLabelSources(this.cookingPersons()),
-  );
+  protected readonly cookLabelSources = computed(() => getCookLabelSources(this.cookingPersons()));
   /** Maps the raw recipe step text into display rows without altering the original instructions. */
   protected readonly preparationDirections = computed(() =>
     buildPreparationDirections(this.selectedRecipe(), this.cookLabelSources()),
@@ -164,52 +170,16 @@ type NutritionFact = { label: string; value: string };
 type IngredientColumns = { yourIngredients: string[]; extraIngredients: string[] };
 
 /** Builds the visible preference tags for the preparation page. */
-function buildPreparationPreferenceTags(
-  recipe: GeneratedRecipe | null,
-  preferences: ReturnType<RecipeGenerationService['lastUsedPreferences']>,
-): string[] {
+function buildPreparationPreferenceTags(recipe: GeneratedRecipe | null): string[] {
   const tags: string[] = recipe?.dietTag ? [recipe.dietTag] : [];
   tags.push(getCookingTimeCategory(recipe?.prepTime ?? ''));
-  return appendCuisineTag(tags, resolveCuisineTag(recipe, preferences?.cuisine));
-}
-
-/** Resolves the visible cuisine tag from the recipe itself before falling back to request preferences. */
-function resolveCuisineTag(
-  recipe: GeneratedRecipe | null,
-  preferredCuisine: string | null | undefined,
-): string | null {
-  const recipeCuisineTag = mapCuisineSlugToLabel(recipe?.cuisineSlug);
-  return recipeCuisineTag ?? preferredCuisine ?? null;
-}
-
-/** Appends the selected cuisine tag when it is meaningful. */
-function appendCuisineTag(tags: string[], cuisine: string | null | undefined): string[] {
-  const trimmedCuisine = cuisine?.trim();
-  return trimmedCuisine && trimmedCuisine !== 'No preferences' ? [...tags, trimmedCuisine] : tags;
-}
-
-/** Maps stored cookbook cuisine slugs back to the UI labels used in the badges. */
-function mapCuisineSlugToLabel(cuisineSlug: string | null | undefined): string | null {
-  switch (cuisineSlug) {
-    case 'italian':
-      return 'Italian';
-    case 'german':
-      return 'German';
-    case 'japanese':
-      return 'Japanese';
-    case 'indian':
-      return 'Indian';
-    case 'gourmet':
-      return 'Gourmet';
-    case 'fusion':
-      return 'Fusion';
-    default:
-      return null;
-  }
+  return tags;
 }
 
 /** Builds the nutrition sidebar values from the selected recipe. */
-function buildNutritionFacts(recipeNutrition: RecipeNutrition['perPortion'] | null): NutritionFact[] {
+function buildNutritionFacts(
+  recipeNutrition: RecipeNutrition['perPortion'] | null,
+): NutritionFact[] {
   if (!recipeNutrition) {
     return createEmptyNutritionFacts();
   }
@@ -239,14 +209,25 @@ function getCookLabelSources(cookingPersons: number): string[] {
   return AVAILABLE_COOK_LABELS.slice(0, Math.min(cookingPersons, AVAILABLE_COOK_LABELS.length));
 }
 
-/** Maps recipe steps into the preparation-page display rows. */
+/** Displays structured step assignments and falls back to a single cook for older stored recipes. */
 function buildPreparationDirections(recipe: GeneratedRecipe | null, activeCookLabels: string[]) {
-  return (recipe?.steps ?? []).map((step, index) => ({
-    number: index + 1,
-    title: `Step ${index + 1}`,
-    text: step.trim(),
-    cookLabelSource: activeCookLabels[index % activeCookLabels.length] ?? AVAILABLE_COOK_LABELS[0],
-  }));
+  const details = recipe?.stepDetails ?? [];
+  return (recipe?.steps ?? []).map((step, index) => {
+    const detail = details[index];
+    const assignedCook = Math.min(
+      Math.max(1, detail?.assignedCook ?? 1),
+      activeCookLabels.length || 1,
+    );
+    return {
+      number: index + 1,
+      title: detail?.title || `Step ${index + 1}`,
+      text: detail?.description || step.trim(),
+      assignedCook,
+      parallelizable: detail?.parallelizable ?? false,
+      durationMinutes: detail?.durationMinutes ?? null,
+      cookLabelSource: activeCookLabels[assignedCook - 1] ?? AVAILABLE_COOK_LABELS[0],
+    };
+  });
 }
 
 /** Splits the ingredient display into user and extra columns. */
@@ -296,4 +277,29 @@ function formatNutritionValue(value: number | null, unit: string): string {
   }
 
   return `${value}${unit}`;
+}
+
+/** Uses macro calorie factors (4/4/9) to calculate energy shares without inventing missing values. */
+function buildMacroNutrition(nutrition: RecipeNutrition | null) {
+  const portion = nutrition?.perPortion;
+  const total = nutrition?.total;
+  const definitions = [
+    { label: 'Protein', key: 'protein_g' as const, factor: 4 },
+    { label: 'Carbs', key: 'carbs_g' as const, factor: 4 },
+    { label: 'Fat', key: 'fat_g' as const, factor: 9 },
+  ];
+  const complete = definitions.every(
+    ({ key }) =>
+      typeof portion?.[key] === 'number' && Number.isFinite(portion[key]) && portion[key]! >= 0,
+  );
+  const macroCalories = complete
+    ? definitions.reduce((sum, { key, factor }) => sum + portion![key]! * factor, 0)
+    : 0;
+  return definitions.map(({ label, key, factor }) => ({
+    label,
+    portion: formatNutritionValue(portion?.[key] ?? null, 'g'),
+    total: formatNutritionValue(total?.[key] ?? null, 'g'),
+    percent:
+      macroCalories > 0 ? Math.round(((portion![key]! * factor) / macroCalories) * 100) : null,
+  }));
 }

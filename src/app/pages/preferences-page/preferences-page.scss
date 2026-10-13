@@ -40,7 +40,7 @@
   width: 142px;
   height: 48px;
   color: #1e5515;
-  font-size: 1.125rem;
+  font-size: 18px;
   font-weight: 700;
 }
 
@@ -50,11 +50,11 @@
   gap: 12px;
   color: #1e5515;
   font-family: 'Quicksand', sans-serif;
-  font-size: 14px;
+  font-size: 16px;
   font-style: normal;
   font-weight: 500;
   letter-spacing: 0;
-  line-height: 10px;
+  line-height: 20px;
   text-decoration: none;
 }
 
@@ -74,7 +74,7 @@
 .preferences-shell {
   display: grid;
   justify-items: center;
-  gap: 120px;
+  gap: 48px;
   width: min(100%, 1160px);
   margin: 0 auto;
 }
@@ -85,7 +85,7 @@
   margin: 0;
   color: #10310b;
   font-family: 'Quicksand', sans-serif;
-  font-size: clamp(1.5rem, 2.2vw, 28px);
+  font-size: clamp(24px, 2.2vw, 28px);
   font-style: normal;
   font-weight: 600;
   letter-spacing: 0;
@@ -105,7 +105,7 @@
 .preference-group {
   display: grid;
   justify-items: start;
-  gap: 40px;
+  gap: 16px;
 }
 
 .preference-label {
@@ -265,7 +265,7 @@
   font-style: normal;
   font-weight: 500;
   letter-spacing: 0;
-  line-height: 10px;
+  line-height: 20px;
   white-space: nowrap;
 }
 
@@ -287,8 +287,9 @@
 
 .preferences-generate-button img {
   display: block;
-  width: min(100%, 351px);
-  height: auto;
+  width: 258px;
+  max-width: 100%;
+  height: 62px;
 }
 
 .preferences-generate-actions {
@@ -408,7 +409,7 @@
   margin: 0;
   color: #faf0e6;
   font-family: 'Quicksand', sans-serif;
-  font-size: clamp(2rem, 3.5vw, 54px);
+  font-size: clamp(32px, 3.5vw, 54px);
   font-style: normal;
   font-weight: 500;
   letter-spacing: 0;
@@ -420,7 +421,7 @@
   margin: 0;
   color: #faf0e6;
   font-family: 'Quicksand', sans-serif;
-  font-size: clamp(1.25rem, 2vw, 32px);
+  font-size: clamp(20px, 2vw, 32px);
   font-style: normal;
   font-weight: 500;
   letter-spacing: 0;
@@ -438,7 +439,7 @@
   background: transparent;
   color: #faf0e6;
   font-family: 'Quicksand', sans-serif;
-  font-size: clamp(1.5rem, 2.6vw, 44px);
+  font-size: clamp(24px, 2.6vw, 44px);
   font-style: normal;
   font-weight: 500;
   letter-spacing: 0;
@@ -532,5 +533,12 @@
 
   .preferences-popup-copy {
     width: 100%;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .preferences-chip,
+  .preference-icon-button {
+    min-height: 44px;
   }
 }

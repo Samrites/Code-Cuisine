@@ -25,8 +25,8 @@
         <div class="cookbook-frame-copy">
           <h1 class="cookbook-title">Cookbook</h1>
           <p class="cookbook-description">
-            From quick bites to gourmet delights, explore them all in our ultimate cookbook and
-            get inspired for your next culinary adventure.
+            From quick bites to gourmet delights, explore them all in our ultimate cookbook and get
+            inspired for your next culinary adventure.
           </p>
         </div>
 
@@ -48,17 +48,46 @@
               >
                 <div class="cookbook-liked-card-meta">
                   <span class="cookbook-liked-card-time">
-                    <img src="Icons/schedule.svg" width="24" height="24" alt="" aria-hidden="true" />
+                    <img
+                      src="Icons/schedule.svg"
+                      width="24"
+                      height="24"
+                      alt=""
+                      aria-hidden="true"
+                    />
                     <span>Cooking time: {{ recipe.prepTime }}</span>
                   </span>
                   <span class="cookbook-liked-card-likes">
-                    <img src="Icons/favorite.svg" width="20" height="20" alt="" aria-hidden="true" />
+                    <img
+                      src="Icons/favorite.svg"
+                      width="20"
+                      height="20"
+                      alt=""
+                      aria-hidden="true"
+                    />
                     <span>{{ recipe.likes }}</span>
                   </span>
                 </div>
 
                 <h3 class="cookbook-liked-card-title">{{ recipe.title }}</h3>
               </article>
+            } @empty {
+              <p class="cookbook-empty-message" role="status">
+                @switch (cookbookStatus()) {
+                  @case ('loading') {
+                    Loading recipes...
+                  }
+                  @case ('unconfigured') {
+                    The cookbook is not connected yet.
+                  }
+                  @case ('error') {
+                    Recipes could not be loaded. Please try again later.
+                  }
+                  @default {
+                    No saved recipes yet. Generate a recipe to start your cookbook.
+                  }
+                }
+              </p>
             }
           </div>
         </section>
@@ -75,7 +104,16 @@
               </span>
               <span class="cookbook-cuisine-title-suffix">cuisine</span>
             </span>
-            <span class="cookbook-cuisine-title-emoji" aria-hidden="true">{{ category.emoji }}</span>
+            @if (cuisineIcons()[category.slug]; as icon) {
+              <img
+                class="cookbook-cuisine-icon"
+                [src]="icon"
+                width="28"
+                height="28"
+                alt=""
+                aria-hidden="true"
+              />
+            }
           </h2>
 
           <a
@@ -87,7 +125,9 @@
               class="cookbook-cuisine-image"
               [src]="category.imagePath"
               width="370"
-              height="314"
+              height="370"
+              loading="lazy"
+              decoding="async"
               [alt]="category.title"
             />
           </a>
@@ -96,7 +136,11 @@
     </section>
 
     <div class="cookbook-footer-cta-row">
-      <a class="cookbook-footer-cta-link" routerLink="/generate-recipe" aria-label="Generate new recipe">
+      <a
+        class="cookbook-footer-cta-link"
+        routerLink="/generate-recipe"
+        aria-label="Generate new recipe"
+      >
         <span>Generate new recipie</span>
         <img
           class="cookbook-footer-cta-arrow"

@@ -97,7 +97,7 @@
             >
               Quick
             </button>
-            <span class="preferences-chip-caption">ab to 20min</span>
+            <span class="preferences-chip-caption">up to 20min</span>
           </div>
 
           <div class="preferences-chip-option">
@@ -109,7 +109,7 @@
             >
               Medium
             </button>
-            <span class="preferences-chip-caption">25-40min</span>
+            <span class="preferences-chip-caption">20–45min</span>
           </div>
 
           <div class="preferences-chip-option">
@@ -236,13 +236,7 @@
         [attr.aria-disabled]="!hasAllRequiredPreferences()"
         (click)="generateRecipe()"
       >
-        <img
-          src="Icons/generate-recept.svg"
-          width="351"
-          height="84"
-          alt=""
-          aria-hidden="true"
-        />
+        <img src="Icons/generate-recept.svg" width="351" height="84" alt="" aria-hidden="true" />
       </button>
 
       <p
@@ -274,11 +268,13 @@
         ×
       </button>
 
-      <h2 class="preferences-popup-title" id="preferences-popup-title">Ups! Not quite enough...</h2>
+      <h2 class="preferences-popup-title" id="preferences-popup-title">
+        Please check your ingredients
+      </h2>
 
       <p class="preferences-popup-copy">
-        It looks like some ingredient quantities aren’t sufficient for your selected servings.
-        Please add or adjust quantities and try again.
+        Add at least one ingredient with a name, a unit, and a quantity greater than zero, then try
+        again.
       </p>
 
       <button class="preferences-popup-link" type="button" (click)="goBackToIngredients()">

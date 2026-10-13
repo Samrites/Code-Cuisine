@@ -1,3 +1,4 @@
+import { normalizeStoredRecipe } from './recipe-storage.utils';
 import { computed, Injectable, signal } from '@angular/core';
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import {
@@ -8,7 +9,6 @@ import {
   getFirestore,
   increment,
   limit,
-  orderBy,
   query,
   serverTimestamp,
   updateDoc,
@@ -21,6 +21,7 @@ import {
   RecipeGenerationPreferences,
   StoredCookbookRecipe,
   type RecipeNutrition,
+  type RecipePreparationStep,
 } from '../models/recipe.model';
 
 type FirestoreRecipeDocument = {
@@ -37,6 +38,7 @@ type FirestoreRecipeDocument = {
   extraIngredients: string[];
   ingredients: string[];
   steps: string[];
+  stepDetails?: RecipePreparationStep[];
   nutrition: RecipeNutrition | null;
   createdAt?: unknown;
   updatedAt?: unknown;
@@ -46,11 +48,20 @@ type FirestoreRecipeDocument = {
 export class CookbookStoreService {
   private readonly db = createFirestore();
   private readonly recipesState = signal<StoredCookbookRecipe[]>([]);
+  private readonly loadStatusState = signal<'loading' | 'ready' | 'unconfigured' | 'error'>(
+    'loading',
+  );
+  readonly loadStatus = this.loadStatusState.asReadonly();
+  private readonly saveStatusState = signal<'idle' | 'saving' | 'saved' | 'unconfigured' | 'error'>(
+    'idle',
+  );
+  readonly saveStatus = this.saveStatusState.asReadonly();
   readonly recipes = computed(() => this.recipesState());
   readonly topLikedRecipes = computed(() =>
     [...this.recipesState()].sort((left, right) => right.likes - left.likes).slice(0, 5),
   );
 
+  /** Loads the shared cookbook once the store is created. */
   constructor() {
     void this.refreshRecipes();
   }
@@ -60,16 +71,23 @@ export class CookbookStoreService {
     return this.recipesState().filter((recipe) => recipe.cuisineSlug === slug);
   }
 
-  /** Reloads the cookbook recipes from Firestore and keeps the store empty when none exist yet. */
+  /** Reloads recipes and exposes loading, connection and error states to the cookbook pages. */
   async refreshRecipes(): Promise<void> {
-    if (!this.db) return this.clearRecipes();
+    if (!this.db) {
+      this.clearRecipes();
+      this.loadStatusState.set('unconfigured');
+      return;
+    }
+
+    this.loadStatusState.set('loading');
     try {
       await this.applyLoadedRecipes();
-      return;
+      this.loadStatusState.set('ready');
     } catch (error) {
       console.error('Failed to load cookbook recipes from Firestore.', error);
+      this.clearRecipes();
+      this.loadStatusState.set('error');
     }
-    this.clearRecipes();
   }
 
   /** Persists newly generated recipes to Firestore while skipping library entries and duplicates. */
@@ -78,12 +96,18 @@ export class CookbookStoreService {
     preferences: RecipeGenerationPreferences | null,
   ): Promise<void> {
     if (!this.db) {
+      this.saveStatusState.set('unconfigured');
       return;
     }
-
-    await this.persistGeneratedRecipes(recipes, preferences);
-
-    await this.refreshRecipes();
+    this.saveStatusState.set('saving');
+    try {
+      await this.persistGeneratedRecipes(recipes, preferences);
+      this.saveStatusState.set('saved');
+      await this.refreshRecipes();
+    } catch (error) {
+      this.saveStatusState.set('error');
+      throw error;
+    }
   }
 
   /** Increments the like counter for a persisted cookbook recipe. */
@@ -102,13 +126,13 @@ export class CookbookStoreService {
     this.applyLocalLike(recipeId);
   }
 
-  /** Loads the cookbook recipes ordered by likes from Firestore. */
+  /** Loads all saved recipes, including older documents without a likes field. */
   private async loadRecipes(): Promise<StoredCookbookRecipe[]> {
-    const recipeQuery = query(collection(this.db!, 'recipes'), orderBy('likes', 'desc'));
-    const snapshot = await getDocs(recipeQuery);
-    return snapshot.docs.map((entry) =>
-      mapFirestoreRecipe(entry.id, entry.data() as FirestoreRecipeDocument),
-    );
+    const snapshot = await getDocs(collection(this.db!, 'recipes'));
+    return snapshot.docs
+      .map((entry) => normalizeStoredRecipe(entry.id, entry.data()))
+      .filter((recipe): recipe is StoredCookbookRecipe => recipe !== null)
+      .sort((left, right) => right.likes - left.likes);
   }
 
   /** Clears the local cookbook store state. */
@@ -129,7 +153,9 @@ export class CookbookStoreService {
   ): FirestoreRecipeDocument | null {
     const cuisineSlug = recipe.cuisineSlug ?? mapCuisinePreferenceToSlug(preferences?.cuisine);
     const titleNormalized = normalizeTitle(recipe.title);
-    return titleNormalized ? createRecipeDocument(recipe, preferences, titleNormalized, cuisineSlug) : null;
+    return titleNormalized
+      ? createRecipeDocument(recipe, preferences, titleNormalized, cuisineSlug)
+      : null;
   }
 
   /** Persists a single generated recipe when it is valid and not yet stored. */
@@ -212,7 +238,9 @@ export class CookbookStoreService {
   /** Mirrors a successful like increment in local state. */
   private applyLocalLike(recipeId: string): void {
     this.recipesState.update((recipes) =>
-      recipes.map((entry) => (entry.id === recipeId ? { ...entry, likes: entry.likes + 1 } : entry)),
+      recipes.map((entry) =>
+        entry.id === recipeId ? { ...entry, likes: entry.likes + 1 } : entry,
+      ),
     );
   }
 }
@@ -229,18 +257,6 @@ function createFirestore(): Firestore | null {
   return getFirestore(app);
 }
 
-/** Maps a Firestore recipe document into the application's cookbook recipe model. */
-function mapFirestoreRecipe(
-  id: string,
-  recipe: FirestoreRecipeDocument,
-): StoredCookbookRecipe {
-  return {
-    ...pickStoredRecipeFields(recipe),
-    id,
-    source: 'library',
-  };
-}
-
 /** Builds the Firestore document stored for a generated recipe. */
 function createRecipeDocument(
   recipe: GeneratedRecipe,
@@ -249,12 +265,22 @@ function createRecipeDocument(
   cuisineSlug: string,
 ): FirestoreRecipeDocument {
   const timestamps = createRecipeTimestamps();
-  return { ...pickPersistedRecipeFields(recipe, preferences), ...timestamps, title: recipe.title, titleNormalized, cuisineSlug };
+  return {
+    ...pickPersistedRecipeFields(recipe, preferences),
+    ...timestamps,
+    title: recipe.title,
+    titleNormalized,
+    cuisineSlug,
+  };
 }
 
 /** Builds the normalized title key used for duplicate detection in Firestore. */
 function normalizeTitle(title: string): string {
-  return title.trim().toLowerCase().replaceAll(/[^a-z0-9\s-]/g, '').replaceAll(/\s+/g, '-');
+  return title
+    .trim()
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9\s-]/g, '')
+    .replaceAll(/\s+/g, '-');
 }
 
 /** Maps the selected cuisine preference to the cookbook slug convention. */
@@ -268,20 +294,14 @@ function parsePrepTimeToMinutes(prepTime: string): number | null {
   return Number.isNaN(minutes) ? null : minutes;
 }
 
-/** Picks the cookbook fields shared by stored recipe objects. */
-function pickStoredRecipeFields(recipe: FirestoreRecipeDocument): Omit<StoredCookbookRecipe, 'id' | 'source'> {
-  return {
-    ...pickStoredRecipeMeta(recipe),
-    ...pickStoredRecipeLists(recipe),
-    titleNormalized: recipe.titleNormalized,
-  };
-}
-
 /** Picks the generated-recipe fields persisted to Firestore. */
 function pickPersistedRecipeFields(
   recipe: GeneratedRecipe,
   preferences: RecipeGenerationPreferences | null,
-): Omit<FirestoreRecipeDocument, 'title' | 'titleNormalized' | 'cuisineSlug' | 'createdAt' | 'updatedAt'> {
+): Omit<
+  FirestoreRecipeDocument,
+  'title' | 'titleNormalized' | 'cuisineSlug' | 'createdAt' | 'updatedAt'
+> {
   return {
     ...pickPersistedRecipeMeta(recipe, preferences),
     ...pickPersistedRecipeLists(recipe),
@@ -298,30 +318,6 @@ const CUISINE_PREFERENCE_SLUGS: Record<string, string> = {
   Fusion: 'fusion',
 };
 
-/** Picks the scalar cookbook fields shared by stored recipe objects. */
-function pickStoredRecipeMeta(
-  recipe: FirestoreRecipeDocument,
-): Pick<
-  StoredCookbookRecipe,
-  'title' | 'description' | 'prepTime' | 'prepTimeMinutes' | 'cookCount' | 'likes' | 'dietTag' | 'cuisineSlug'
-> {
-  const { title, description, prepTime, prepTimeMinutes, cookCount, likes, dietTag, cuisineSlug } = recipe;
-  return { title, description, prepTime, prepTimeMinutes, cookCount, likes, dietTag, cuisineSlug };
-}
-
-/** Picks the array cookbook fields shared by stored recipe objects. */
-function pickStoredRecipeLists(
-  recipe: FirestoreRecipeDocument,
-): Pick<StoredCookbookRecipe, 'userIngredients' | 'extraIngredients' | 'ingredients' | 'steps' | 'nutrition'> {
-  return {
-    userIngredients: recipe.userIngredients,
-    extraIngredients: recipe.extraIngredients,
-    ingredients: recipe.ingredients,
-    steps: recipe.steps,
-    nutrition: recipe.nutrition,
-  };
-}
-
 /** Picks the scalar generated-recipe fields persisted to Firestore. */
 function pickPersistedRecipeMeta(
   recipe: GeneratedRecipe,
@@ -332,18 +328,29 @@ function pickPersistedRecipeMeta(
 > {
   const prepTimeMinutes = recipe.prepTimeMinutes ?? parsePrepTimeToMinutes(recipe.prepTime);
   const cookCount = recipe.cookCount ?? Math.max(1, preferences?.persons ?? 1);
-  return { description: recipe.description, prepTime: recipe.prepTime, prepTimeMinutes, cookCount, likes: recipe.likes ?? 0, dietTag: recipe.dietTag ?? null };
+  return {
+    description: recipe.description,
+    prepTime: recipe.prepTime,
+    prepTimeMinutes,
+    cookCount,
+    likes: recipe.likes ?? 0,
+    dietTag: recipe.dietTag ?? null,
+  };
 }
 
 /** Picks the list fields persisted to Firestore for generated recipes. */
 function pickPersistedRecipeLists(
   recipe: GeneratedRecipe,
-): Pick<FirestoreRecipeDocument, 'userIngredients' | 'extraIngredients' | 'ingredients' | 'steps'> {
+): Pick<
+  FirestoreRecipeDocument,
+  'userIngredients' | 'extraIngredients' | 'ingredients' | 'steps' | 'stepDetails'
+> {
   return {
     userIngredients: recipe.userIngredients ?? [],
     extraIngredients: recipe.extraIngredients ?? [],
     ingredients: recipe.ingredients,
     steps: recipe.steps,
+    stepDetails: recipe.stepDetails ?? [],
   };
 }
 

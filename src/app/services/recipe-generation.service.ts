@@ -1,6 +1,6 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import { CookbookStoreService } from './cookbook-store.service';
 import { IngredientDraftStateService } from './ingredient-draft-state.service';
 import { getApiConfig } from '../config/api.config';
@@ -16,6 +16,7 @@ import {
   RecipeGenerationPreferences,
   RecipeGenerationRequest,
   type RecipeNutrition,
+  type RecipePreparationStep,
 } from '../models/recipe.model';
 
 const EXPECTED_RECIPE_COUNT = 3;
@@ -28,7 +29,17 @@ type PartialGeneratedRecipeResponse = GeneratedRecipe & {
   nutrition?: RecipeNutrition | null;
   ingredients?: Array<string | { name?: string; amount?: number; unit?: string; source?: string }>;
   extraIngredients?: Array<string | { name?: string; amount?: number; unit?: string }>;
-  steps?: Array<string | { title?: string; description?: string }>;
+  steps?: Array<
+    | string
+    | {
+        title?: string;
+        description?: string;
+        assignedTo?: string[];
+        parallelizable?: boolean;
+        durationMinutes?: number;
+      }
+  >;
+  helperAssignments?: Array<{ person: string; stepIndexes: number[] }>;
   source?: 'library' | 'generated';
 };
 
@@ -119,7 +130,9 @@ export class RecipeGenerationService {
 
   /** Requests recipes from the n8n webhook. */
   private requestRecipes(request: RecipeGenerationRequest): Promise<RecipeGenerationResponse> {
-    return firstValueFrom(this.http.post<RecipeGenerationResponse>(this.webhookUrl, request));
+    return firstValueFrom(
+      this.http.post<RecipeGenerationResponse>(this.webhookUrl, request).pipe(timeout(90000)),
+    );
   }
 
   /** Executes the webhook request and applies a valid success response. */
@@ -145,7 +158,9 @@ export class RecipeGenerationService {
     }
 
     if (!this.hasValidRecipeCount(response.recipes)) return null;
-    return this.ensureRecipesExist(normalizeRecipesFromResponse(response.recipes, request.preferences, request));
+    return this.ensureRecipesExist(
+      normalizeRecipesFromResponse(response.recipes, request.preferences, request),
+    );
   }
 
   /** Checks the recipe count and raises the standardized mismatch error when needed. */
@@ -168,7 +183,9 @@ export class RecipeGenerationService {
     this.generationStatus.set('success');
     this.pendingRequest.set(null);
     this.ingredientDraftState.resetIngredients();
-    void this.cookbookStore.saveGeneratedRecipes(recipes, preferences);
+    void this.cookbookStore.saveGeneratedRecipes(recipes, preferences).catch((error: unknown) => {
+      console.error('Generated recipes could not be saved to the cookbook.', error);
+    });
   }
 
   /** Raises a consistent error state and clears stale recipe results. */
@@ -221,7 +238,13 @@ function normalizeRecipe(
     normalizedExtraIngredients,
     request,
   );
-  return buildNormalizedRecipe(recipe, defaults, ingredientCollections, normalizedIngredients, normalizedSteps);
+  return buildNormalizedRecipe(
+    recipe,
+    defaults,
+    ingredientCollections,
+    normalizedIngredients,
+    normalizedSteps,
+  );
 }
 
 /** Converts request or response diet labels into the UI tag format. */
@@ -241,7 +264,9 @@ function normalizeIngredientList(
 }
 
 /** Converts mixed step payloads into plain instruction strings for the current preparation UI. */
-function normalizeStepList(steps: Array<string | { title?: string; description?: string }>): string[] {
+function normalizeStepList(
+  steps: Array<string | { title?: string; description?: string }>,
+): string[] {
   return steps.map((step) => normalizeStepLine(step)).filter(Boolean);
 }
 
@@ -318,9 +343,11 @@ function buildRecipeLists(
 
 /** Builds the final normalized recipe object from the prepared recipe parts. */
 function buildNormalizedRecipe(
-  recipe: PartialGeneratedRecipeResponse, defaults: Partial<GeneratedRecipe>,
+  recipe: PartialGeneratedRecipeResponse,
+  defaults: Partial<GeneratedRecipe>,
   ingredientCollections: IngredientCollections,
-  normalizedIngredients: string[], normalizedSteps: string[],
+  normalizedIngredients: string[],
+  normalizedSteps: string[],
 ): GeneratedRecipe {
   return {
     ...recipe,
@@ -328,6 +355,7 @@ function buildNormalizedRecipe(
     ...ingredientCollections,
     ...buildRecipeLists(normalizedIngredients, normalizedSteps),
     nutrition: recipe.nutrition ?? null,
+    stepDetails: recipe.stepDetails?.length ? recipe.stepDetails : buildStepDetails(recipe),
   };
 }
 
@@ -352,8 +380,8 @@ function buildRecipeClassification(
 ): Pick<GeneratedRecipe, 'dietTag' | 'cuisineSlug'> {
   const preferredCuisine =
     recipe.source === 'library'
-      ? recipe.cuisine ?? null
-      : preferences.cuisine ?? recipe.cuisine ?? null;
+      ? (recipe.cuisine ?? null)
+      : (preferences.cuisine ?? recipe.cuisine ?? null);
 
   return {
     dietTag: recipe.dietTag ?? normalizeDietTag(recipe.diet ?? preferences.diet),
@@ -364,7 +392,9 @@ function buildRecipeClassification(
 /** Builds the normalized ingredient collections for a generated recipe. */
 function buildRecipeIngredients(
   recipe: GeneratedRecipe & {
-    ingredients?: Array<string | { name?: string; amount?: number; unit?: string; source?: string }>;
+    ingredients?: Array<
+      string | { name?: string; amount?: number; unit?: string; source?: string }
+    >;
   },
   normalizedIngredients: string[],
   normalizedExtraIngredients: string[],
@@ -376,14 +406,19 @@ function buildRecipeIngredients(
 
   if (explicitUserIngredients.length || explicitExtraIngredients.length) {
     return {
-      userIngredients: explicitUserIngredients.length ? explicitUserIngredients : requestUserIngredients,
+      userIngredients: explicitUserIngredients.length
+        ? explicitUserIngredients
+        : requestUserIngredients,
       extraIngredients: explicitExtraIngredients,
     };
   }
 
   const sourceSeparatedIngredients = splitIngredientsBySource(recipe.ingredients ?? []);
 
-  if (sourceSeparatedIngredients.userIngredients.length || sourceSeparatedIngredients.extraIngredients.length) {
+  if (
+    sourceSeparatedIngredients.userIngredients.length ||
+    sourceSeparatedIngredients.extraIngredients.length
+  ) {
     return {
       userIngredients: sourceSeparatedIngredients.userIngredients.length
         ? sourceSeparatedIngredients.userIngredients
@@ -440,14 +475,20 @@ function filterOutRequestIngredients(
     requestIngredients.map((ingredient) => normalizeIngredientName(ingredient.name)),
   );
 
-  return ingredients.filter((ingredient) => !requestIngredientNames.has(normalizeIngredientName(extractIngredientName(ingredient))));
+  return ingredients.filter(
+    (ingredient) =>
+      !requestIngredientNames.has(normalizeIngredientName(extractIngredientName(ingredient))),
+  );
 }
 
 /** Extracts the probable ingredient name from a display line such as "200 g spinach". */
 function extractIngredientName(ingredientLine: string): string {
   return ingredientLine
     .replace(/^[\d.,/]+\s*/u, '')
-    .replace(/^(g|gram|grams|kg|ml|l|piece|pieces|teaspoon|teaspoons|tablespoon|tablespoons)\s+/iu, '')
+    .replace(
+      /^(g|gram|grams|kg|ml|l|piece|pieces|teaspoon|teaspoons|tablespoon|tablespoons)\s+/iu,
+      '',
+    )
     .trim();
 }
 
@@ -485,4 +526,43 @@ function formatMeasuredIngredient(
   ingredient: { amount?: number; unit?: string },
 ): string {
   return `${ingredient.amount} ${ingredient.unit ?? ''} ${name}`.trim();
+}
+
+/** Preserves step metadata while keeping the existing string-based recipes backward compatible. */
+function buildStepDetails(recipe: {
+  steps?: Array<
+    | string
+    | {
+        title?: string;
+        description?: string;
+        assignedTo?: string[];
+        parallelizable?: boolean;
+        durationMinutes?: number;
+      }
+  >;
+  helperAssignments?: Array<{ person: string; stepIndexes: number[] }>;
+}): RecipePreparationStep[] {
+  return (recipe.steps ?? []).flatMap((step, index) => {
+    const description =
+      typeof step === 'string' ? step.trim() : String(step.description ?? step.title ?? '').trim();
+    if (!description) return [];
+    const rawStep = typeof step === 'string' ? null : step;
+    const helper =
+      rawStep?.assignedTo?.[0] ??
+      recipe.helperAssignments?.find((entry) => entry.stepIndexes.includes(index + 1))?.person;
+    const parsedCook = Number(helper?.match(/(\d+)$/)?.[1]);
+    const assignedCook =
+      Number.isInteger(parsedCook) && parsedCook >= 1 && parsedCook <= 3 ? parsedCook : 1;
+    const minutes = rawStep?.durationMinutes;
+    return [
+      {
+        title: rawStep?.title?.trim() || `Step ${index + 1}`,
+        description,
+        assignedCook,
+        parallelizable: rawStep?.parallelizable === true,
+        durationMinutes:
+          typeof minutes === 'number' && Number.isFinite(minutes) && minutes >= 0 ? minutes : null,
+      },
+    ];
+  });
 }

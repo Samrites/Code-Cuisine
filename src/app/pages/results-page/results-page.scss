@@ -1,9 +1,7 @@
 :host {
   display: block;
   min-height: 100dvh;
-  background:
-    radial-gradient(circle at top right, rgb(250 240 230 / 18%), transparent 32%),
-    linear-gradient(180deg, #396039 0%, #31522f 100%);
+  background: #396039;
 }
 
 .results-header {
@@ -36,7 +34,7 @@
   width: 142px;
   height: 48px;
   color: #faf0e6;
-  font-size: 1.125rem;
+  font-size: 18px;
   font-weight: 700;
 }
 
@@ -44,13 +42,13 @@
   min-height: calc(100dvh - 88px);
   width: min(100%, var(--page-max-width));
   margin: 0 auto;
-  padding: 48px 68px 68px;
+  padding: 64px 80px 112px;
   box-sizing: border-box;
 }
 
 .results-shell {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) 574px;
   align-items: center;
   gap: 56px;
 }
@@ -64,23 +62,17 @@
 .results-title {
   margin: 0;
   color: #faf0e6;
-  font-family: 'Quicksand', sans-serif;
-  font-size: clamp(2.75rem, 5vw, 54px);
-  font-style: normal;
-  font-weight: 600;
-  letter-spacing: 0;
-  line-height: clamp(3.25rem, 5.5vw, 65px);
+  font:
+    600 54px/65px 'Quicksand',
+    sans-serif;
 }
 
 .results-intro {
   margin: 0;
   color: #faf0e6;
-  font-family: 'Quicksand', sans-serif;
-  font-size: clamp(1.125rem, 2.1vw, 24px);
-  font-style: normal;
-  font-weight: 500;
-  letter-spacing: 0;
-  line-height: 1;
+  font:
+    500 24px/1.25 'Quicksand',
+    sans-serif;
 }
 
 .results-preference-tags {
@@ -121,25 +113,23 @@
 
 .results-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 411px));
+  grid-template-columns: repeat(3, minmax(0, 411px));
   gap: 24px;
-  margin-top: 48px;
+  margin-top: 88px;
   min-width: 0;
 }
 
 .recipe-card {
   display: grid;
   grid-template-rows: auto 1fr auto;
-  align-content: start;
-  width: min(100%, 411px);
+  width: 100%;
   min-width: 0;
   min-height: 338px;
   padding: 32px 24px;
-  gap: 48px;
+  gap: 20px;
   border-radius: 20px;
   box-sizing: border-box;
   background: #dbe0db;
-  box-shadow: 0 24px 48px rgb(16 49 11 / 18%);
 }
 
 .recipe-card-top {
@@ -181,27 +171,24 @@
 
 .recipe-card-body {
   display: grid;
-  gap: 20px;
+  align-content: start;
+  gap: 16px;
 }
 
 .recipe-card-title {
   margin: 0;
   color: #10310b;
-  font-family: 'Quicksand', sans-serif;
-  font-size: 32px;
-  font-style: normal;
-  font-weight: 600;
-  letter-spacing: 0;
-  line-height: 1;
+  font:
+    600 32px/40px 'Quicksand',
+    sans-serif;
   overflow-wrap: anywhere;
-  word-break: break-word;
 }
 
 .recipe-card-description {
   margin: 0;
   color: #2f4c2d;
   font-family: 'Quicksand', sans-serif;
-  font-size: 1rem;
+  font-size: 16px;
   font-style: normal;
   font-weight: 500;
   line-height: 1.45;
@@ -216,7 +203,7 @@
   margin: 0;
   color: #1e5515;
   font-family: 'Quicksand', sans-serif;
-  font-size: 1rem;
+  font-size: 16px;
   font-style: normal;
   font-weight: 700;
   line-height: 1.2;
@@ -230,7 +217,7 @@
   padding-left: 20px;
   color: #2f4c2d;
   font-family: 'Quicksand', sans-serif;
-  font-size: 0.975rem;
+  font-size: 16px;
   font-style: normal;
   font-weight: 500;
   line-height: 1.35;
@@ -272,7 +259,7 @@
 .results-cta-row {
   display: flex;
   justify-content: flex-end;
-  margin-top: 48px;
+  margin-top: 64px;
 }
 
 .results-cta-link {
@@ -385,4 +372,31 @@
     font-size: 24px;
     line-height: 1.1;
   }
+}
+
+@media (min-width: 769px) and (max-width: 1200px) {
+  .results-shell {
+    grid-template-columns: 1fr 42%;
+    gap: 32px;
+  }
+}
+@media (max-width: 768px) {
+  .results-shell,
+  .results-cards {
+    grid-template-columns: 1fr;
+  }
+  .results-visual {
+    width: min(100%, 574px);
+  }
+  .results-cards {
+    margin-top: 40px;
+  }
+}
+
+.results-save-message {
+  margin: 24px 0 0;
+  color: #faf0e6;
+  font:
+    500 16px/1.5 'Quicksand',
+    sans-serif;
 }

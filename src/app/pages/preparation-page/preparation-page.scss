@@ -14,7 +14,7 @@
 .preparation-header-branding {
   display: grid;
   justify-items: start;
-  gap: 20px;
+  gap: 32px;
 }
 
 .preparation-brand {
@@ -40,7 +40,7 @@
   width: 142px;
   height: 48px;
   color: #1e5515;
-  font-size: 1.125rem;
+  font-size: 18px;
   font-weight: 700;
 }
 
@@ -50,10 +50,10 @@
   gap: 12px;
   color: #1e5515;
   font-family: 'Quicksand', sans-serif;
-  font-size: 14px;
+  font-size: 16px;
   font-style: normal;
   font-weight: 500;
-  line-height: 10px;
+  line-height: 20px;
   letter-spacing: 0;
   text-decoration: none;
 }
@@ -63,22 +63,22 @@
 }
 
 .preparation-page {
-  min-height: calc(100dvh - 88px);
+  min-height: calc(100dvh - 144px);
   width: min(100%, var(--page-max-width));
   margin: 0 auto;
-  padding: 48px 68px 68px;
+  padding: 56px 96px 112px;
   box-sizing: border-box;
 }
 
 .preparation-shell {
   display: grid;
-  gap: 24px;
+  gap: 56px;
 }
 
 .preparation-content-frame {
   display: grid;
-  gap: 48px;
-  padding: 40px 48px;
+  gap: 0;
+  padding: 36px 44px 40px;
   border: 4px solid rgb(250 240 230 / 70%);
   border-radius: 20px;
   background: rgb(250 240 230 / 30%);
@@ -141,7 +141,8 @@
 }
 
 .preparation-section-hero {
-  width: 100%;
+  width: min(100%, 1152px);
+  margin: 48px auto 0;
 }
 
 .preparation-section-hero img {
@@ -158,65 +159,16 @@
   display: none;
 }
 
-@media (max-width: 950px) {
-  .preparation-intro {
-    display: grid;
-    grid-template-columns: 1fr;
-    min-height: auto;
-    gap: 16px;
-  }
-
-  .preparation-intro-main {
-    max-width: none;
-    gap: 14px;
-  }
-
-  .preparation-intro-side {
-    display: block;
-    flex: 0 0 auto;
-  }
-
-  .preparation-intro-side-panel {
-    justify-items: start;
-    align-content: start;
-    gap: 14px;
-  }
-
-  .preparation-title {
-    max-width: none;
-  }
-
-  .preparation-tags {
-    justify-content: flex-start;
-    gap: 8px;
-    order: 2;
-  }
-
-  .preparation-tag {
-    min-width: auto;
-  }
-
-  .preparation-nutrition {
-    gap: 12px;
-    order: 1;
-  }
-
-  .preparation-nutrition-grid {
-    grid-template-columns: repeat(2, minmax(0, max-content));
-    justify-content: start;
-    gap: 12px 20px;
-  }
-}
-
 .preparation-intro,
 .preparation-card {
   box-sizing: border-box;
 }
 
 .preparation-intro {
-  display: flex;
-  align-items: stretch;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  align-items: center;
+  gap: 40px;
   min-height: 245px;
   padding: 24px;
   border-radius: 20px;
@@ -225,23 +177,22 @@
 
 .preparation-intro-main {
   display: grid;
-  align-content: space-between;
-  gap: 18px;
-  max-width: 720px;
+  align-content: start;
+  gap: 16px;
+  min-width: 0;
 }
 
 .preparation-intro-side {
-  flex: 0 0 280px;
-  display: flex;
-  justify-content: flex-end;
+  display: block;
+  min-width: 0;
 }
 
 .preparation-intro-side-panel {
   width: 100%;
-  display: grid;
-  justify-items: end;
-  align-content: space-between;
-  gap: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 28px;
 }
 
 .preparation-tags {
@@ -256,19 +207,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 118px;
-  height: 32px;
+  min-height: 32px;
   padding: 6px 12px;
   border-radius: 30px;
   box-sizing: border-box;
   background: rgb(57 96 57 / 20%);
   color: #396039;
-  font-family: 'Quicksand', sans-serif;
-  font-size: 20px;
-  font-style: normal;
-  font-weight: 500;
-  line-height: 20px;
-  letter-spacing: 0;
+  font:
+    500 20px/20px 'Quicksand',
+    sans-serif;
 }
 
 .preparation-nutrition {
@@ -346,17 +293,19 @@
 }
 
 .preparation-title {
+  margin: 0;
   max-width: 700px;
-  font-size: clamp(2.5rem, 4.2vw, 54px);
+  font-size: 54px;
   font-weight: 600;
-  line-height: clamp(3rem, 4.8vw, 65px);
+  line-height: 65px;
+  overflow-wrap: anywhere;
 }
 
 .preparation-description {
   margin: 20px 0 0;
   color: #2f4c2d;
   font-family: 'Quicksand', sans-serif;
-  font-size: 1.125rem;
+  font-size: 18px;
   font-style: normal;
   font-weight: 500;
   line-height: 1.5;
@@ -403,7 +352,7 @@
 }
 
 .preparation-card-title {
-  font-size: 1.625rem;
+  font-size: 26px;
   font-weight: 600;
   line-height: 1;
 }
@@ -427,7 +376,7 @@
   margin: 24px 0 0;
   color: #2f4c2d;
   font-family: 'Quicksand', sans-serif;
-  font-size: 1.05rem;
+  font-size: 16.8px;
   font-style: normal;
   font-weight: 500;
   line-height: 1.5;
@@ -440,13 +389,14 @@
 .preparation-ingredients-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 48px;
-  width: min(100%, 764px);
+  gap: 80px;
+  width: min(100%, 732px);
   margin: 0 auto;
 }
 
 .preparation-ingredients-section {
   width: 100%;
+  margin-top: 16px;
 }
 
 .preparation-ingredients-column {
@@ -466,7 +416,7 @@
 
 .preparation-ingredients-list {
   display: grid;
-  gap: 8px;
+  gap: 4px;
   margin: 0;
   padding-left: 24px;
 }
@@ -542,23 +492,21 @@
 .preparation-directions-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 40px 42px;
-  width: min(100%, 880px);
-  margin: 0 auto;
+  gap: 40px 60px;
+  width: min(100%, 860px);
+  margin: 16px auto 0;
 }
 
 .preparation-direction-item {
   min-width: 0;
-  max-width: 410px;
 }
 
 .preparation-direction-title-row {
   display: grid;
-  grid-template-columns: 32px minmax(0, auto) auto;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: start;
   gap: 10px;
-  margin-bottom: 18px;
+  margin-bottom: 32px;
 }
 
 .preparation-direction-number {
@@ -600,13 +548,9 @@
 .preparation-direction-text {
   margin: 0;
   color: #10310b;
-  font-family: 'Quicksand', sans-serif;
-  font-size: 18px;
-  font-style: normal;
-  font-weight: 500;
-  line-height: 1.25;
-  letter-spacing: 0;
-  max-width: 32ch;
+  font:
+    500 18px/23px 'Quicksand',
+    sans-serif;
 }
 
 .preparation-like-section {
@@ -614,6 +558,7 @@
   align-items: center;
   justify-content: center;
   gap: 16px;
+  margin-top: 56px;
   text-align: center;
 }
 
@@ -700,238 +645,352 @@
   background: #396039;
   color: #faf0e6;
   font-family: 'Quicksand', sans-serif;
-  font-size: 1rem;
+  font-size: 16px;
   font-style: normal;
   font-weight: 600;
   line-height: 1;
   text-decoration: none;
 }
 
-@media (max-width: 768px) {
-  .preparation-header {
-    padding: 24px 20px 0;
-  }
+.preparation-nutrition-details,
+.preparation-helper-tasks {
+  max-width: 100%;
+  color: #10310b;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.preparation-nutrition-details {
+  width: 100%;
+  overflow-x: auto;
+}
+.preparation-nutrition-details summary,
+.preparation-helper-tasks summary {
+  min-height: 44px;
+  cursor: pointer;
+}
+.preparation-nutrition-details table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.preparation-nutrition-details caption {
+  text-align: left;
+  font-size: 14px;
+  padding: 8px 0;
+}
+.preparation-nutrition-details th,
+.preparation-nutrition-details td {
+  padding: 8px;
+  text-align: left;
+}
+.preparation-macro-bar {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+}
+.preparation-macro-bar meter {
+  width: 100%;
+  height: 20px;
+}
+.preparation-helper-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 24px;
+}
+.preparation-helper-grid ol {
+  list-style: none;
+  padding: 0;
+}
+.preparation-helper-grid label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.preparation-helper-grid input {
+  width: 20px;
+  height: 20px;
+}
+.preparation-step-note {
+  margin: 4px 0;
+  color: #396039;
+  font-size: 14px;
+}
 
-  .preparation-header-branding {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .preparation-brand,
-  .preparation-brand-media,
-  .preparation-brand-fallback {
-    width: 118px;
-    height: auto;
-  }
-
+.preparation-like-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgb(57 96 57 / 30%);
+}
+.preparation-like-tag img {
+  width: 20px;
+  height: 20px;
+}
+.preparation-more-details {
+  margin: 0;
+  color: #396039;
+  font:
+    500 16px/1.5 'Quicksand',
+    sans-serif;
+}
+.preparation-more-details > summary {
+  min-height: 44px;
+  cursor: pointer;
+}
+.preparation-more-details > div {
+  display: grid;
+  gap: 24px;
+  margin-top: 16px;
+}
+.preparation-generate-link {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  color: #396039;
+  text-decoration: none;
+  font:
+    500 20px/1.3 'Quicksand',
+    sans-serif;
+}
+.preparation-generate-link img {
+  transform: rotate(180deg);
+}
+@media (min-width: 769px) and (max-width: 1200px) {
   .preparation-page {
-    padding: 20px 12px 32px;
+    padding-left: 40px;
+    padding-right: 40px;
   }
-
   .preparation-content-frame {
-    gap: 24px;
-    padding: 12px;
+    padding-left: 24px;
+    padding-right: 24px;
   }
-
-  .preparation-section-hero .preparation-section-hero-desktop {
-    display: none;
-  }
-
-  .preparation-section-hero .preparation-section-hero-mobile {
-    display: block;
-    width: 100%;
-    height: auto;
-  }
-
-  .preparation-footer-frame {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    min-height: auto;
-    padding: 24px 20px;
-  }
-
   .preparation-intro {
-    display: grid;
-    grid-template-columns: 1fr;
-    min-height: auto;
-    padding: 16px;
-    gap: 16px;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 24px;
   }
-
-  .preparation-intro-main {
-    max-width: none;
-    gap: 14px;
-  }
-
-  .preparation-intro-side {
-    display: block;
-    flex: 0 0 auto;
-  }
-
-  .preparation-intro,
-  .preparation-card {
-    padding: 24px;
-  }
-
-  .preparation-intro-side-panel {
-    justify-items: start;
-    align-content: start;
-    gap: 14px;
-  }
-
   .preparation-title {
-    max-width: none;
-    font-size: 22px;
-    line-height: 1.1;
+    font-size: 40px;
+    line-height: 1.2;
   }
-
-  .preparation-tags {
-    justify-content: flex-start;
-    gap: 8px;
-    order: 2;
-  }
-
   .preparation-tag {
-    min-width: auto;
-    height: 32px;
-    padding: 6px 12px;
     font-size: 16px;
-    line-height: 1;
   }
-
-  .preparation-nutrition {
-    gap: 12px;
-    order: 1;
-  }
-
-  .preparation-nutrition-title {
+  .preparation-nutrition-label,
+  .preparation-nutrition-value {
     font-size: 18px;
   }
-
-  .preparation-nutrition-grid {
-    grid-template-columns: repeat(2, minmax(0, max-content));
-    justify-content: start;
-    gap: 12px 20px;
-  }
-
-  .preparation-nutrition-label {
-    font-size: 16px;
-  }
-
-  .preparation-nutrition-value {
-    font-size: 16px;
-    line-height: 1;
-  }
-
-  .preparation-ingredients-grid {
-    grid-template-columns: 1fr;
-    gap: 28px;
-    width: 100%;
-  }
-
-  .preparation-directions-grid {
-    grid-template-columns: 1fr;
-    gap: 28px;
-  }
-
-  .preparation-like-section,
-  .preparation-like-copy {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .preparation-like-section {
-    gap: 10px;
-  }
-
-  .preparation-like-title {
-    font-size: 16px;
-  }
-
-  .preparation-like-text {
-    font-size: 14px;
-    line-height: 1.15;
-  }
-
-  .preparation-like-button {
-    width: 40px;
-    height: 40px;
-    padding: 4px;
-  }
-
-  .preparation-like-icon {
-    width: 24px;
-    height: 24px;
-  }
-
-  .preparation-ingredients-heading,
-  .preparation-ingredients-item {
-    font-size: 20px;
-  }
-
   .preparation-direction-title {
     font-size: 20px;
   }
-
-  .preparation-direction-text {
+}
+@media (max-width: 768px) {
+  .preparation-header {
+    padding: 12px 20px 0;
+  }
+  .preparation-header-branding {
+    gap: 12px;
+  }
+  .preparation-brand,
+  .preparation-brand-media,
+  .preparation-brand-fallback {
+    width: 96px;
+    height: 33px;
+  }
+  .preparation-back-link span {
+    display: none;
+  }
+  .preparation-back-link {
+    min-height: 44px;
+  }
+  .preparation-page {
+    padding: 24px 8px 32px;
+  }
+  .preparation-shell {
+    gap: 40px;
+  }
+  .preparation-content-frame {
+    padding: 8px 8px 24px;
+    border-width: 2px;
+    border-radius: 16px;
+  }
+  .preparation-intro {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    min-height: 380px;
+    padding: 24px;
+    gap: 48px;
+    border-radius: 16px;
+  }
+  .preparation-intro-main {
+    gap: 16px;
+  }
+  .preparation-title {
+    font-size: 24px;
+    line-height: 1.25;
+  }
+  .preparation-meta-item {
     font-size: 16px;
-    line-height: 1.3;
+    gap: 4px;
+    line-height: 1.25;
   }
-
-  .preparation-ingredients-toggle,
-  .preparation-directions-toggle {
-    margin-top: 16px;
-    font-size: 14px;
-    line-height: 18px;
-  }
-
-  .preparation-ingredients-toggle img,
-  .preparation-directions-toggle img {
+  .preparation-meta-item img {
     width: 20px;
     height: 20px;
   }
-
-  .preparation-meta-item {
-    font-size: 16px;
-    line-height: 1.1;
-  }
-
   .preparation-chefs {
-    display: grid;
-    grid-template-columns: repeat(2, max-content);
-    justify-content: start;
-    gap: 6px 8px;
+    gap: 12px;
   }
-
   .preparation-chefs-label {
-    grid-column: 1 / -1;
-    font-size: 16px;
-    line-height: 1.1;
+    display: none;
   }
-
   .preparation-cook-label {
+    height: 27px;
+  }
+  .preparation-intro-side-panel {
+    gap: 28px;
+  }
+  .preparation-tags {
+    order: 2;
+    justify-content: start;
+    gap: 8px;
+  }
+  .preparation-tag {
+    font-size: 16px;
+    line-height: 20px;
+    padding: 6px 10px;
+  }
+  .preparation-nutrition {
+    order: 1;
+    gap: 12px;
+  }
+  .preparation-nutrition-title {
+    font-size: 16px;
+    line-height: 1.25;
+  }
+  .preparation-nutrition-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .preparation-nutrition-label,
+  .preparation-nutrition-value {
+    font-size: 16px;
+    line-height: 1.25;
+  }
+  .preparation-nutrition-item {
+    justify-items: start;
+    gap: 8px;
+  }
+  .preparation-section-hero {
+    margin-top: 40px;
+  }
+  .preparation-section-hero .preparation-section-hero-desktop {
+    display: none;
+  }
+  .preparation-section-hero .preparation-section-hero-mobile {
+    display: block;
+    max-width: 340px;
+    margin: 0 auto;
+  }
+  .preparation-ingredients-section {
+    margin-top: 32px;
+  }
+  .preparation-ingredients-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    width: 100%;
+    padding: 0 12px;
+    box-sizing: border-box;
+  }
+  .preparation-ingredients-heading {
+    font-size: 20px;
+    line-height: 1.25;
+    margin-bottom: 16px;
+  }
+  .preparation-ingredients-item {
+    font-size: 16px;
+    line-height: 1.25;
+  }
+  .preparation-ingredients-list {
+    gap: 2px;
+  }
+  .preparation-ingredients-toggle,
+  .preparation-directions-toggle {
+    display: flex;
+    min-height: 44px;
+    font-size: 16px;
+    margin-top: 16px;
+  }
+  .preparation-directions-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    margin-top: 32px;
+    padding: 0 12px;
+    box-sizing: border-box;
+  }
+  .preparation-direction-title-row {
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .preparation-direction-number {
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+    padding: 0;
+  }
+  .preparation-direction-title {
+    font-size: 20px;
+    line-height: 1.25;
+  }
+  .preparation-direction-cook-label {
     height: 24px;
   }
-
-  .preparation-footer-frame {
-    gap: 20px;
-  }
-
-  .preparation-footer-title {
-    flex: 1 1 auto;
-    max-width: 14ch;
+  .preparation-direction-text {
     font-size: 16px;
-    line-height: 1.15;
+    line-height: 1.25;
+  }
+  .preparation-like-section {
+    margin-top: 32px;
+    gap: 12px;
     text-align: left;
   }
-
-  .preparation-footer-button {
-    flex: 0 0 auto;
-    min-width: 117px;
-    min-height: 30px;
-    padding: 0 16px;
+  .preparation-like-copy {
+    display: block;
+  }
+  .preparation-like-title {
     font-size: 16px;
-    line-height: 1;
+    line-height: 1.25;
+  }
+  .preparation-like-text {
+    font-size: 16px;
+    line-height: 1.25;
+  }
+  .preparation-like-button {
+    flex: 0 0 48px;
+  }
+  .preparation-footer-frame {
+    min-height: 82px;
+    padding: 16px;
+    gap: 16px;
+    border-radius: 16px;
+  }
+  .preparation-footer-title {
+    flex: 1;
+    text-align: left;
+    font-size: 16px;
+    line-height: 1.25;
+  }
+  .preparation-footer-button {
+    min-width: 117px;
+    min-height: 44px;
+    padding: 8px 16px;
+    font-size: 16px;
+  }
+  .preparation-generate-link {
+    font-size: 16px;
   }
 }

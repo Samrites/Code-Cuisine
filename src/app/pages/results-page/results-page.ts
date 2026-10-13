@@ -1,3 +1,4 @@
+import { CookbookStoreService } from '../../services/cookbook-store.service';
 import { Component, computed, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { RecipeGenerationService } from '../../services/recipe-generation.service';
@@ -12,6 +13,7 @@ import { GeneratedRecipe } from '../../models/recipe.model';
 export class ResultsPageComponent {
   protected readonly recipeGeneration = inject(RecipeGenerationService);
   private readonly router = inject(Router);
+  protected readonly cookbookSaveStatus = inject(CookbookStoreService).saveStatus;
   protected readonly generatedRecipes = this.recipeGeneration.generatedRecipes;
   protected readonly displayRecipes = computed(() => this.generatedRecipes());
   protected readonly selectedPreferenceTags = computed(() => {

@@ -28,7 +28,7 @@ npm start
 4. Ensure the published workflow exposes:
 
 ```text
-POST /webhook/generate-recipe-v2
+POST /webhook/generate-recipe-v5
 ```
 
 5. Configure Firebase in:
@@ -55,7 +55,7 @@ window.__CODE_CUISINE_FIREBASE__ = {
 1. Users enter ingredients on `/generate-recipe`.
 2. Users choose portions, helpers, cuisine, cooking time and diet on `/preferences`.
 3. `/loading` triggers recipe generation through `RecipeGenerationService`.
-4. The service posts to `/api/generate-recipe-v2`.
+4. The service posts to the configured production webhook `/webhook/generate-recipe-v5`.
 5. Angular proxies `/api/*` to the local n8n production webhook.
 6. Successful recipes are normalized, shown on `/results`, and saved to Firestore.
 7. Stored recipes become visible in `/cookbook` and `/cookbook/:category`.
@@ -133,6 +133,18 @@ Example success shape:
 ## Test commands
 
 ```bash
-ng build
-ng test
+npm run test:regressions
+npm run test:n8n
+npm run build
+npm test
 ```
+
+## Bildkorrekturen und Checklisten-Stand
+
+Siehe `KORREKTUREN.md` für die vorgenommenen Bild-/px-Korrekturen, Prüfungen und offenen Anforderungen. Nach dem Entpacken `npm ci` ausführen; mitgelieferte Windows-Abhängigkeiten sind nicht Teil der korrigierten ZIP.
+
+## Originale Küchenstil-Symbole und Widescreen
+
+Die sechs PNG-Dateien aus deinem Download-Ordner nach `public/Icons` kopieren; genaue Dateinamen stehen in `KORREKTUREN.md`. Der originale Fünf-Teller-Export heißt `Visuals-widescreen.svg` und wird ab 1440 px eingebunden. Fehlende Originale werden nicht durch eigene Bilder ersetzt.
+
+Für die Regressionen: `npm run test:regressions`. Weitere offene Checklistenpunkte und die Grenzen der hier durchgeführten Prüfungen stehen in `KORREKTUREN.md`.

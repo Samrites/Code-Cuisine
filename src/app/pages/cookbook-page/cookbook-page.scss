@@ -14,7 +14,7 @@
 .cookbook-header-branding {
   display: grid;
   justify-items: start;
-  gap: 20px;
+  gap: 32px;
 }
 
 .cookbook-brand {
@@ -40,21 +40,21 @@
   width: 142px;
   height: 48px;
   color: #1e5515;
-  font-size: 1.125rem;
+  font-size: 18px;
   font-weight: 700;
 }
 
 .cookbook-page {
   width: min(100%, var(--page-max-width));
-  min-height: calc(100dvh - 88px);
+  min-height: calc(100dvh - 144px);
   margin: 0 auto;
-  padding: 48px 68px 68px;
+  padding: 56px 56px 68px;
   box-sizing: border-box;
 }
 
 .cookbook-shell {
   display: grid;
-  gap: 24px;
+  gap: 80px;
 }
 
 .cookbook-footer-cta-row {
@@ -101,8 +101,9 @@
 
 .cookbook-cuisines {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px 26px;
+  grid-template-columns: repeat(3, minmax(0, 400px));
+  justify-content: space-between;
+  gap: 56px 32px;
 }
 
 .cookbook-cuisine-card {
@@ -121,24 +122,15 @@
   gap: 6px;
   margin: 0 0 8px;
   color: #1e5515;
-  font-family: 'Quicksand', sans-serif;
-  font-size: 24px;
-  font-style: normal;
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: 0;
+  font:
+    500 28px/1.25 'Quicksand',
+    sans-serif;
 }
 
 .cookbook-cuisine-title-copy {
   display: inline-flex;
   align-items: center;
   gap: 0.25em;
-}
-
-.cookbook-cuisine-title-name,
-.cookbook-cuisine-title-suffix,
-.cookbook-cuisine-title-emoji {
-  display: block;
 }
 
 .cookbook-cuisine-image {
@@ -161,19 +153,19 @@
 }
 
 .cookbook-frame {
-  min-height: 281px;
+  min-height: 280px;
   padding: 40px 24px;
   border-radius: 20px;
-  background: rgb(57 96 57 / 4%);
+  background: #f7f9f7;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .cookbook-frame-main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  align-items: start;
-  gap: 24px;
-  min-height: 100%;
+  grid-template-columns: minmax(0, 416px) minmax(0, 1fr);
+  align-items: center;
+  gap: 54px;
 }
 
 .cookbook-frame-copy {
@@ -224,14 +216,13 @@
 .cookbook-liked-card {
   display: grid;
   align-content: start;
-  gap: 24px;
+  gap: 8px;
   min-height: 124px;
   padding: 16px 12px;
   border-radius: 16px;
   background: rgb(219 224 219 / 70%);
   box-sizing: border-box;
   cursor: pointer;
-  transition: transform 160ms ease, box-shadow 160ms ease;
 }
 
 .cookbook-liked-card:hover {
@@ -306,37 +297,26 @@
 .cookbook-liked-card-title {
   margin: 0;
   color: #10310b;
-  font-family: 'Quicksand', sans-serif;
-  font-size: 28px;
-  font-style: normal;
-  font-weight: 600;
-  line-height: 1.05;
-  letter-spacing: 0;
+  font:
+    500 24px/1.25 'Quicksand',
+    sans-serif;
 }
 
 .cookbook-title {
   margin: 0;
   color: #1e5515;
-  font-family: 'Quicksand', sans-serif;
-  font-size: 64px;
-  font-style: normal;
-  font-weight: 700;
-  line-height: 65px;
-  letter-spacing: 0;
-  text-align: left;
+  font:
+    600 64px/1.2 'Quicksand',
+    sans-serif;
 }
 
 .cookbook-description {
-  margin: 17px 0 0;
-  max-width: 40rem;
+  margin: 12px 0 0;
+  max-width: 416px;
   color: #1e5515;
-  font-family: 'Quicksand', sans-serif;
-  font-size: 20px;
-  font-style: normal;
-  font-weight: 500;
-  line-height: 1;
-  letter-spacing: 0;
-  text-align: left;
+  font:
+    500 24px/1.25 'Quicksand',
+    sans-serif;
 }
 
 .cookbook-back-link {
@@ -345,10 +325,10 @@
   gap: 12px;
   color: #1e5515;
   font-family: 'Quicksand', sans-serif;
-  font-size: 14px;
+  font-size: 16px;
   font-style: normal;
   font-weight: 500;
-  line-height: 10px;
+  line-height: 20px;
   letter-spacing: 0;
   text-decoration: none;
 }
@@ -401,5 +381,58 @@
 
   .cookbook-liked-card-title {
     font-size: 22px;
+  }
+}
+
+.cookbook-cuisine-icon {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.cookbook-empty-message {
+  margin: 0;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #396039;
+}
+
+@media (min-width: 769px) and (max-width: 1100px) {
+  .cookbook-frame-main {
+    grid-template-columns: minmax(0, 36%) minmax(0, 1fr);
+    gap: 32px;
+  }
+  .cookbook-title {
+    font-size: 48px;
+  }
+  .cookbook-description {
+    font-size: 20px;
+  }
+  .cookbook-cuisine-title {
+    font-size: 22px;
+  }
+}
+@media (max-width: 768px) {
+  .cookbook-frame {
+    padding: 24px 16px;
+  }
+  .cookbook-frame-main {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .cookbook-shell {
+    gap: 40px;
+  }
+  .cookbook-cuisines {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .cookbook-cuisine-title {
+    font-size: 24px;
+  }
+  .cookbook-description {
+    max-width: none;
   }
 }

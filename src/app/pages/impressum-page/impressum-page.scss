@@ -23,7 +23,7 @@
   align-items: center;
   justify-content: center;
   color: #f5f5dc;
-  font-size: 1.125rem;
+  font-size: 18px;
   font-weight: 700;
 }
 
@@ -38,7 +38,7 @@
   color: #396039;
   text-decoration: none;
   font-family: 'Quicksand', sans-serif;
-  font-size: 1rem;
+  font-size: 16px;
   font-weight: 600;
   line-height: 1;
 }
@@ -66,7 +66,7 @@
 
 .impressum-kicker {
   margin: 0 0 8px;
-  font-size: 1rem;
+  font-size: 16px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -74,13 +74,13 @@
 
 .impressum-title {
   margin: 0 0 16px;
-  font-size: clamp(2.2rem, 4vw, 3rem);
+  font-size: clamp(35.2px, 4vw, 48px);
   line-height: 1.05;
 }
 
 .impressum-copy {
   margin: 0 0 32px;
-  font-size: 1.0625rem;
+  font-size: 17px;
   line-height: 1.6;
 }
 

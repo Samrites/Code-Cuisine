@@ -237,7 +237,12 @@ export class GenerateRecipePageComponent {
       return;
     }
 
-    this.ingredientDraftState.updateIngredient(editingEntryId, name, normalizedAmount, this.selectedUnit());
+    this.ingredientDraftState.updateIngredient(
+      editingEntryId,
+      name,
+      normalizedAmount,
+      this.selectedUnit(),
+    );
   }
 }
 
@@ -272,12 +277,17 @@ function canShowIngredientSuggestionSuffix(
   normalizedValue: string,
   firstSuggestion: string | undefined,
 ): boolean {
-  return normalizedValue.length >= 2 && !!firstSuggestion && firstSuggestion.startsWith(normalizedValue);
+  return (
+    normalizedValue.length >= 2 && !!firstSuggestion && firstSuggestion.startsWith(normalizedValue)
+  );
 }
 
 /** Normalizes raw ingredient-name input to the accepted client-side format. */
 function normalizeIngredientNameInput(value: string): string {
-  return value.replaceAll(/[^a-zA-Z\s-]/g, '').replaceAll(/\s+/g, ' ').slice(0, 40);
+  return value
+    .replaceAll(/[^a-zA-Z\s-]/g, '')
+    .replaceAll(/\s+/g, ' ')
+    .slice(0, 40);
 }
 
 /** Normalizes the raw serving-size field value. */
@@ -299,7 +309,9 @@ function getIngredientValidationMessage(validation: IngredientValidationResult):
 }
 
 /** Returns the feedback message for combined ingredient-form validation errors. */
-function getCombinedIngredientValidationMessage(validation: IngredientValidationResult): string | null {
+function getCombinedIngredientValidationMessage(
+  validation: IngredientValidationResult,
+): string | null {
   if (validation.missingName && validation.invalidServing) {
     return 'Please enter an ingredient and a serving size of at least 1.';
   }

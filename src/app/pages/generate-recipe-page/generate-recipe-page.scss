@@ -7,7 +7,7 @@
 .generate-header {
   position: relative;
   box-sizing: border-box;
-  min-height: 240px;
+  min-height: 311px;
   width: min(100%, var(--page-max-width));
   margin: 0 auto;
   padding: 40px 68px 0;
@@ -16,10 +16,8 @@
 .generate-brand {
   position: absolute;
   top: 40px;
-  left: calc(50% - (1079px / 2));
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  left: 68px;
+  display: block;
   width: 142px;
   height: 48px;
   text-decoration: none;
@@ -39,7 +37,7 @@
   width: 142px;
   height: 48px;
   color: #1e5515;
-  font-size: 1.125rem;
+  font-size: 18px;
   font-weight: 700;
 }
 
@@ -47,7 +45,7 @@
   display: grid;
   justify-items: center;
   gap: 20px;
-  padding-top: 72px;
+  padding-top: 112px;
 }
 
 .generate-title {
@@ -56,7 +54,7 @@
   margin: 0;
   color: #1e5515;
   font-family: 'Quicksand', sans-serif;
-  font-size: clamp(2.5rem, 4.8vw, 54px);
+  font-size: clamp(40px, 4.8vw, 54px);
   font-style: normal;
   font-weight: 600;
   letter-spacing: 0;
@@ -70,7 +68,7 @@
   margin: 0;
   color: #10310b;
   font-family: 'Quicksand', sans-serif;
-  font-size: clamp(1rem, 2.1vw, 24px);
+  font-size: clamp(16px, 2.1vw, 24px);
   font-style: normal;
   font-weight: 500;
   letter-spacing: 0;
@@ -83,7 +81,7 @@
   width: min(100%, var(--page-max-width));
   margin: 0 auto;
   padding: 24px 68px 40px;
-  min-height: calc(100dvh - 240px);
+  min-height: calc(100dvh - 311px);
 }
 
 .generate-panels {
@@ -91,7 +89,7 @@
   grid-template-columns: minmax(0, 577px) minmax(0, 478px);
   justify-content: center;
   align-items: start;
-  gap: 24px;
+  gap: 32px;
 }
 
 .generate-actions {
@@ -146,10 +144,10 @@
 .ingredient-panel {
   display: grid;
   align-content: start;
-  gap: 32px;
+  gap: 16px;
   width: 577px;
   min-height: 176px;
-  padding: 25px 24px;
+  padding: 25px 34px;
 }
 
 .ingredient-panel-header {
@@ -194,7 +192,7 @@
 }
 
 .serving-size {
-  width: 141px;
+  width: 177px;
   margin-left: auto;
 }
 
@@ -400,7 +398,7 @@
   background: transparent;
   color: #10310b;
   font-family: 'Quicksand', sans-serif;
-  font-size: 13px;
+  font-size: 16px;
   font-style: normal;
   font-weight: 500;
   letter-spacing: 0;
@@ -836,5 +834,11 @@
   .ingredient-list-action {
     width: 24px;
     height: 24px;
+  }
+}
+
+@media (min-width: 1201px) {
+  .ingredient-input-shell {
+    margin-right: 24px;
   }
 }
