@@ -17,7 +17,7 @@ const CUISINE_ALIASES: Record<string, string> = {
   fusion: 'fusion',
 };
 
-/** Reads both existing n8n recipe documents and current frontend documents without inventing recipes. */
+/** Reads both existing recipe documents and current frontend documents without inventing recipes. */
 export function normalizeStoredRecipe(id: string, input: unknown): StoredCookbookRecipe | null {
   const data = record(input);
   const title = text(data['title']);
@@ -32,8 +32,8 @@ export function normalizeStoredRecipe(id: string, input: unknown): StoredCookboo
         .filter((item) => record(item)['source'] !== 'extra')
         .map(ingredientLine)
         .filter(Boolean);
-  const details = stepDetails(data);
-  const prepTimeMinutes = finiteNumber(data['prepTimeMinutes'] ?? data['cookTimeMinutes']);
+  const details = stepDetails({ ...data, steps: data['steps'] ?? data['instructions'] });
+  const prepTimeMinutes = finiteNumber(data['prepTimeMinutes'] ?? data['cookTimeMinutes'] ?? data['cooking_time']);
   const rawCuisine = text(data['cuisineSlug'] ?? data['cuisine']).toLowerCase();
   const diet = text(data['dietTag'] ?? data['diet']).toLowerCase();
   return {
