@@ -110,7 +110,7 @@
   padding: 16px 26px;
   gap: 10px;
   border: 0;
-  background: #396039;
+  background: #3a6039;
   color: #faf0e6;
   font-family: 'Quicksand', sans-serif;
   font-size: 24px;
@@ -555,9 +555,10 @@
 
 .ingredient-list-name {
   flex: 1 1 auto;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  white-space: normal;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ingredient-list-actions {
@@ -716,20 +717,8 @@
     width: 100%;
   }
 
-  .ingredient-suggestions {
-    grid-row: 3;
-    grid-column: 1 / -1;
-    padding-left: 12px;
-  }
-
-  .ingredient-suggestion {
-    font-size: 16px;
-    line-height: 1.25;
-    word-break: normal;
-  }
-
   .serving-size {
-    grid-row: 4;
+    grid-row: 3;
     margin-top: 10px;
     margin-left: 0;
     grid-column: 1 / -1;
@@ -737,7 +726,7 @@
   }
 
   .serving-size-controls {
-    grid-row: 5;
+    grid-row: 4;
     grid-column: 1;
     margin-left: 0;
     justify-self: start;
@@ -762,7 +751,7 @@
   }
 
   .ingredient-add {
-    grid-row: 5;
+    grid-row: 4;
     grid-column: 2;
     justify-self: start;
     align-self: start;
@@ -770,7 +759,7 @@
   }
 
   .ingredient-feedback {
-    grid-row: 6;
+    grid-row: 5;
     grid-column: 1 / -1;
   }
 
@@ -822,8 +811,9 @@
     grid-column: 2;
     grid-row: 2;
     min-width: 0;
-    overflow-wrap: anywhere;
-    word-break: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .ingredient-list-actions {

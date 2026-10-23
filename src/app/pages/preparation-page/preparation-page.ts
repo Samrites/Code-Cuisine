@@ -94,7 +94,7 @@ export class PreparationPageComponent {
     });
   }
 
-  /** Toggles the liked state for the currently selected recipe and persists the like in Firestore. */
+  /** Toggles the liked state for the currently selected recipe and persists the like in Supabase. */
   protected toggleLike(): void {
     const recipe = this.selectedRecipe();
 
@@ -158,7 +158,7 @@ export class PreparationPageComponent {
     }
   }
 
-  /** Persists a positive like toggle to Firestore. */
+  /** Persists a positive like toggle to Supabase. */
   private persistRecipeLike(recipe: GeneratedRecipe, nextValue: boolean): void {
     if (nextValue) {
       void this.cookbookStore.likeRecipe(recipe);

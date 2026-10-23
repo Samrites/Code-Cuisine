@@ -16,7 +16,7 @@ type CookbookCategoryConfig = {
   mobileHeroHeight: number;
 };
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 20;
 const DEFAULT_CATEGORY = {
   slug: 'italian',
   title: 'Italian cuisine',

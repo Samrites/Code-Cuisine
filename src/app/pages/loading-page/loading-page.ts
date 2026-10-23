@@ -24,9 +24,10 @@ export class LoadingPageComponent {
   protected readonly canShowLoader = computed(() => this.generationStatus() === 'loading');
 
   /** Identifies the daily limit response so retry is not offered while quota is exhausted. */
-  protected readonly dailyLimitReached = computed(() =>
-    (this.generationErrorMessage() ?? '').toLowerCase().includes('daily recipe limit reached'),
-  );
+  protected readonly dailyLimitReached = computed(() => {
+    const message = (this.generationErrorMessage() ?? '').toLowerCase();
+    return message.includes('daily') && message.includes('limit') && message.includes('reached');
+  });
 
   /** Starts the pending generation request and redirects once valid recipes are ready. */
   constructor() {

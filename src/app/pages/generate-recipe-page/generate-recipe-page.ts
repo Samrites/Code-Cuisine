@@ -72,9 +72,6 @@ export class GenerateRecipePageComponent {
   protected readonly availableUnits = computed(() =>
     this.unitOptions.filter((unit) => unit !== this.selectedUnit()),
   );
-  protected readonly ingredientNameSuggestions = computed(() =>
-    this.ingredientEntries().map((entry) => entry.name),
-  );
   protected readonly hasFormFeedback = computed(() => this.formFeedback().length > 0);
   protected readonly canShowNextStepButton = computed(() => this.ingredientEntries().length >= 1);
 
