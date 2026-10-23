@@ -1,9 +1,10 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom, timeout } from 'rxjs';
 import { CookbookStoreService } from './cookbook-store.service';
 import { IngredientDraftStateService } from './ingredient-draft-state.service';
 import { getApiConfig } from '../config/api.config';
+import { getSupabaseConfig } from '../config/supabase.config';
 import {
   getRecipeGenerationErrorMessage,
   hasExpectedRecipeCount,
@@ -71,7 +72,7 @@ export class RecipeGenerationService {
     this.generationStatus.set('idle');
   }
 
-  /** Executes the pending request against the live n8n webhook. */
+  /** Executes the pending request against the configured recipe endpoint. */
   async generateQueuedRecipe(): Promise<void> {
     const request = this.pendingRequest();
     if (this.shouldSkipGeneration(request)) return;
@@ -80,8 +81,8 @@ export class RecipeGenerationService {
 
     try {
       await this.handleRecipeResponse(activeRequest);
-    } catch {
-      this.setGenerationError('The recipe service is not reachable right now. Please try again.');
+    } catch (error: unknown) {
+      this.setGenerationError(getRequestErrorMessage(error));
     }
   }
 
@@ -128,11 +129,25 @@ export class RecipeGenerationService {
     this.generationErrorMessage.set(null);
   }
 
-  /** Requests recipes from the n8n webhook. */
+  /** Requests recipes from the recipe endpoint. */
   private requestRecipes(request: RecipeGenerationRequest): Promise<RecipeGenerationResponse> {
-    return firstValueFrom(
-      this.http.post<RecipeGenerationResponse>(this.webhookUrl, request).pipe(timeout(90000)),
-    );
+    if (!this.webhookUrl) {
+      return Promise.reject(new Error('Die Rezeptgenerierung benötigt noch eine Supabase Edge Function. Das Kochbuch kann bereits verwendet werden.'));
+    }
+    const config = getSupabaseConfig();
+    if (!config) return Promise.reject(new Error('Supabase ist nicht konfiguriert.'));
+    const body = {
+      ingredients: request.ingredients,
+      servings: request.preferences.portions,
+      helpers: request.preferences.persons,
+      cuisine: ({ German: 'de', Italian: 'it', Japanese: 'jp', Indian: 'in', Gourmet: 'gourmet', Fusion: 'fusion' } as Record<string, string>)[request.preferences.cuisine ?? ''] ?? request.preferences.cuisine ?? 'fusion',
+      timeCategory: ({ Quick: 'quick', Medium: 'medium', Elaborate: 'elaborate', Schnell: 'quick', Mittel: 'medium', Aufwendig: 'elaborate' } as Record<string, string>)[request.preferences.cookingTime ?? ''] ?? request.preferences.cookingTime ?? 'quick',
+      diet: request.preferences.diet ?? 'none',
+      generateCount: EXPECTED_RECIPE_COUNT,
+    };
+    return firstValueFrom(this.http.post<RecipeGenerationResponse>(this.webhookUrl, body, {
+      headers: { apikey: config.anonKey, Authorization: `Bearer ${config.anonKey}` },
+    }).pipe(timeout(90000)));
   }
 
   /** Executes the webhook request and applies a valid success response. */
@@ -159,7 +174,7 @@ export class RecipeGenerationService {
 
     if (!this.hasValidRecipeCount(response.recipes)) return null;
     return this.ensureRecipesExist(
-      normalizeRecipesFromResponse(response.recipes, request.preferences, request),
+      normalizeRecipesFromResponse(response.recipes.map(adaptEdgeRecipe), request.preferences, request),
     );
   }
 
@@ -211,6 +226,49 @@ export class RecipeGenerationService {
     this.setGenerationError('No recipes were returned.');
     return null;
   }
+}
+
+/** Preserves useful n8n error details instead of replacing every HTTP failure with one message. */
+function getRequestErrorMessage(error: unknown): string {
+  if (error instanceof HttpErrorResponse) {
+    const backendMessage = readBackendMessage(error.error);
+    if (backendMessage) return backendMessage;
+
+    if (error.status === 0) {
+      return 'The recipe service could not be reached. Please check the connection and try again.';
+    }
+
+    if (error.status === 429) {
+      return 'The daily recipe limit has been reached. Please try again tomorrow.';
+    }
+
+    if (error.status === 503) {
+      return 'The AI service is temporarily unavailable. Please try again later.';
+    }
+
+    if (error.status >= 500) {
+      return 'The recipe service returned a technical error. Please try again later.';
+    }
+  }
+
+  return 'The recipe service is not reachable right now. Please try again.';
+}
+
+/** Reads the standardized message returned by backend from JSON or plain-text responses. */
+function readBackendMessage(responseBody: unknown): string | null {
+  if (typeof responseBody === 'string' && responseBody.trim()) {
+    const trimmedBody = responseBody.trim();
+
+    try {
+      return readBackendMessage(JSON.parse(trimmedBody)) ?? trimmedBody;
+    } catch {
+      return trimmedBody;
+    }
+  }
+  if (typeof responseBody !== 'object' || responseBody === null) return null;
+
+  const message = (responseBody as { message?: unknown; error?: unknown }).message ?? (responseBody as { error?: unknown }).error;
+  return typeof message === 'string' && message.trim() ? message.trim() : null;
 }
 
 /** Normalizes every recipe returned by the backend into the UI's expected shape. */
@@ -565,4 +623,24 @@ function buildStepDetails(recipe: {
       },
     ];
   });
+}
+
+/** Adapts Supabase Edge Function snake_case fields to the Angular recipe model. */
+function adaptEdgeRecipe(value: GeneratedRecipe): GeneratedRecipe {
+  const raw = value as unknown as Record<string, unknown>;
+  const minutes = Number(raw['cooking_time'] ?? raw['cookTimeMinutes'] ?? 20);
+  const steps = Array.isArray(raw['instructions']) ? raw['instructions'] : raw['steps'];
+  const rawNutrition = raw['nutrition'] as Record<string, unknown> | null;
+  const nutrition = rawNutrition && typeof rawNutrition === 'object' && ('perPortion' in rawNutrition || 'total' in rawNutrition)
+    ? rawNutrition as unknown as RecipeNutrition : null;
+  return {
+    ...value,
+    prepTime: `${minutes} min`,
+    prepTimeMinutes: Number.isFinite(minutes) ? minutes : 20,
+    cookCount: Number(raw['helpers'] ?? 1),
+    cuisineSlug: mapCuisineToSlug(String(raw['cuisine'] ?? 'fusion')),
+    ingredients: Array.isArray(raw['ingredients']) ? raw['ingredients'] as string[] : [],
+    steps: Array.isArray(steps) ? steps as string[] : [],
+    nutrition,
+  };
 }
