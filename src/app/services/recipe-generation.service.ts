@@ -146,7 +146,7 @@ export class RecipeGenerationService {
       generateCount: EXPECTED_RECIPE_COUNT,
     };
     return firstValueFrom(this.http.post<RecipeGenerationResponse>(this.webhookUrl, body, {
-      headers: { apikey: config.anonKey, Authorization: `Bearer ${config.anonKey}` },
+      headers: { apikey: config.anonKey },
     }).pipe(timeout(90000)));
   }
 
@@ -236,6 +236,10 @@ function getRequestErrorMessage(error: unknown): string {
 
     if (error.status === 0) {
       return 'The recipe service could not be reached. Please check the connection and try again.';
+    }
+
+    if (error.status === 401 || error.status === 403) {
+      return 'Supabase rejected the recipe request. Please check the public API key and Edge Function access settings.';
     }
 
     if (error.status === 429) {

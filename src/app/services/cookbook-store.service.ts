@@ -32,7 +32,7 @@ export class CookbookStoreService {
     this.loadStatusState.set('loading');
     try {
       const response = await fetch(`${config.url}/rest/v1/recipes?select=*&order=created_at.desc&limit=500`, {
-        headers: { apikey: config.anonKey, Authorization: `Bearer ${config.anonKey}` },
+        headers: { apikey: config.anonKey },
       });
       if (!response.ok) throw new Error(`Supabase read failed (${response.status})`);
       const rows = await response.json() as DatabaseRecipe[];
@@ -74,7 +74,7 @@ export class CookbookStoreService {
       if (payload.length) {
         const response = await fetch(`${config.url}/rest/v1/recipes`, {
           method: 'POST',
-          headers: { apikey: config.anonKey, Authorization: `Bearer ${config.anonKey}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+          headers: { apikey: config.anonKey, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
           body: JSON.stringify(payload),
         });
         if (!response.ok) throw new Error(`Supabase save failed (${response.status})`);

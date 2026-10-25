@@ -39,5 +39,5 @@ export function hasExpectedRecipeCount(recipes: GeneratedRecipe[], expectedCount
 
 /** Extracts a message from either a flat or structured error value. */
 function readErrorMessage(error: RecipeGenerationErrorResponse['error']): string | null {
-  return typeof error === 'string' ? null : (error.message ?? null);
+  return typeof error === 'string' ? error : (error.message ?? null);
 }

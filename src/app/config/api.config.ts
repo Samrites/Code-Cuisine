@@ -9,7 +9,7 @@ export interface ApiRuntimeConfig {
 }
 
 const DEFAULT_API_CONFIG: ApiRuntimeConfig = {
-  recipeWebhookUrl: '/api/generate-recipe-v5-fixed',
+  recipeWebhookUrl: '',
 };
 
 /** Reads runtime API endpoints injected from `public/api-config.js`. */
