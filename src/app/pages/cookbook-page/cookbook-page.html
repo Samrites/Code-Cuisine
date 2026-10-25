@@ -1,0 +1,156 @@
+<header class="cookbook-header">
+  <div class="cookbook-header-branding">
+    <a class="cookbook-brand" routerLink="/" aria-label="Back to home page">
+      <object
+        class="cookbook-brand-media"
+        data="Icons/Capa_green.svg?v=1"
+        type="image/svg+xml"
+        aria-label="Code-a-Cuisine"
+      >
+        <span class="cookbook-brand-fallback">Code a Cuisine</span>
+      </object>
+    </a>
+
+    <a class="cookbook-back-link" routerLink="/" aria-label="Back to home">
+      <img src="Icons/arrow-11.svg" width="24" height="24" alt="" aria-hidden="true" />
+      <span>Back</span>
+    </a>
+  </div>
+</header>
+
+<main class="cookbook-page" aria-label="Cookbook page">
+  <section class="cookbook-shell">
+    <section class="cookbook-frame" aria-label="Cookbook content container">
+      <div class="cookbook-frame-main">
+        <div class="cookbook-frame-copy">
+          <h1 class="cookbook-title">Cookbook</h1>
+          <p class="cookbook-description">
+            From quick bites to gourmet delights, explore them all in our ultimate cookbook and get
+            inspired for your next culinary adventure.
+          </p>
+        </div>
+
+        <section class="cookbook-liked" aria-labelledby="cookbook-liked-title">
+          <div class="cookbook-liked-heading">
+            <h2 class="cookbook-liked-title" id="cookbook-liked-title">Most liked recipes</h2>
+            <img src="Icons/Heart.svg" width="32" height="32" alt="" aria-hidden="true" />
+          </div>
+
+          <div class="cookbook-liked-scroll" aria-label="Most liked recipes">
+            @for (recipe of likedRecipes(); track recipe.title) {
+              <article
+                class="cookbook-liked-card"
+                role="button"
+                tabindex="0"
+                (click)="openRecipe(recipe)"
+                (keydown.enter)="openRecipe(recipe)"
+                (keydown.space)="openRecipe(recipe); $event.preventDefault()"
+              >
+                <div class="cookbook-liked-card-meta">
+                  <span class="cookbook-liked-card-time">
+                    <img
+                      src="Icons/schedule.svg"
+                      width="24"
+                      height="24"
+                      alt=""
+                      aria-hidden="true"
+                    />
+                    <span>Cooking time: {{ recipe.prepTime }}</span>
+                  </span>
+                  <span class="cookbook-liked-card-likes">
+                    <img
+                      src="Icons/favorite.svg"
+                      width="20"
+                      height="20"
+                      alt=""
+                      aria-hidden="true"
+                    />
+                    <span>{{ recipe.likes }}</span>
+                  </span>
+                </div>
+
+                <h3 class="cookbook-liked-card-title">{{ recipe.title }}</h3>
+              </article>
+            } @empty {
+              <p class="cookbook-empty-message" role="status">
+                @switch (cookbookStatus()) {
+                  @case ('loading') {
+                    Loading recipes...
+                  }
+                  @case ('unconfigured') {
+                    The cookbook is not connected yet.
+                  }
+                  @case ('error') {
+                    Recipes could not be loaded. Please try again later.
+                  }
+                  @default {
+                    No saved recipes yet. Generate a recipe to start your cookbook.
+                  }
+                }
+              </p>
+            }
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="cookbook-cuisines" aria-label="Cuisine categories">
+      @for (category of cuisineCategories; track category.title) {
+        <article class="cookbook-cuisine-card">
+          <h2 class="cookbook-cuisine-title">
+            <span class="cookbook-cuisine-title-copy">
+              <span class="cookbook-cuisine-title-name">
+                {{ category.title.replace(' cuisine', '') }}
+              </span>
+              <span class="cookbook-cuisine-title-suffix">cuisine</span>
+            </span>
+            @if (cuisineIcons()[category.slug]; as icon) {
+              <img
+                class="cookbook-cuisine-icon"
+                [src]="icon"
+                width="28"
+                height="28"
+                alt=""
+                aria-hidden="true"
+              />
+            }
+          </h2>
+
+          <a
+            class="cookbook-cuisine-link"
+            [routerLink]="['/cookbook', category.slug]"
+            [attr.aria-label]="category.title"
+          >
+            <img
+              class="cookbook-cuisine-image"
+              [src]="category.imagePath"
+              width="370"
+              height="370"
+              loading="lazy"
+              decoding="async"
+              [alt]="category.title"
+            />
+          </a>
+        </article>
+      }
+    </section>
+
+    <div class="cookbook-footer-cta-row">
+      <a
+        class="cookbook-footer-cta-link"
+        routerLink="/generate-recipe"
+        aria-label="Generate new recipe"
+      >
+        <span>Generate new recipe</span>
+        <img
+          class="cookbook-footer-cta-arrow"
+          src="Icons/arrow-11.svg"
+          width="24"
+          height="24"
+          alt=""
+          aria-hidden="true"
+        />
+      </a>
+    </div>
+  </section>
+</main>

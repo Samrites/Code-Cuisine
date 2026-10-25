@@ -1,0 +1,194 @@
+<header class="generate-header">
+  <a class="generate-brand" routerLink="/" aria-label="Zur Hero-Seite">
+    <object
+      class="generate-brand-media"
+      data="Icons/Capa_green.svg?v=1"
+      type="image/svg+xml"
+      aria-label="Code-a-Cuisine"
+    >
+      <span class="generate-brand-fallback">Code a Cuisine</span>
+    </object>
+  </a>
+
+  <div class="generate-intro">
+    <h1 class="generate-title">Generate recipe</h1>
+    <p class="generate-subtitle">
+      Got random stuff in your kitchen? Pop it in&mdash;we've got the perfect recipe waiting.
+    </p>
+  </div>
+</header>
+
+<main class="generate-page-content" aria-label="Generate recipe page">
+  <div class="generate-panels">
+    <section
+      class="ingredient-panel"
+      [class.ingredient-panel-unit-menu-open]="isUnitMenuOpen()"
+      aria-labelledby="ingredient-panel-title"
+    >
+      <div class="ingredient-panel-header">
+        <label class="ingredient-label" id="ingredient-panel-title" for="ingredient-input">
+          Ingredient
+        </label>
+
+        <div class="serving-size">
+          <label class="serving-size-label" for="serving-size-input">Serving size</label>
+        </div>
+      </div>
+
+      <div class="ingredient-panel-controls">
+        <div class="ingredient-input-shell">
+          <div
+            class="ingredient-input-field"
+            [class.ingredient-input-invalid]="hasIngredientNameError()"
+          >
+            @if (ingredientGhostSuggestionSuffix().length > 0) {
+              <span class="ingredient-input-ghost" aria-hidden="true">
+                <span class="ingredient-input-ghost-prefix">{{ ingredientName() }}</span
+                ><span class="ingredient-input-ghost-suffix">{{
+                  ingredientGhostSuggestionSuffix()
+                }}</span>
+              </span>
+            }
+
+            <input
+              class="ingredient-input"
+              id="ingredient-input"
+              type="text"
+              maxlength="40"
+              [value]="ingredientName()"
+              (focus)="openIngredientAutocomplete()"
+              (input)="updateIngredientName($any($event.target).value)"
+              autocomplete="off"
+            />
+          </div>
+
+          @if (highlightedIngredientSuggestions().length > 0) {
+            <div class="ingredient-autocomplete" aria-label="Ingredient autocomplete suggestions">
+              @for (ingredient of highlightedIngredientSuggestions(); track ingredient) {
+                <button
+                  class="ingredient-autocomplete-item"
+                  type="button"
+                  (click)="applyIngredientSuggestion(ingredient)"
+                >
+                  {{ ingredient }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="serving-size-controls">
+          <input
+            class="serving-size-input"
+            [class.serving-size-input-invalid]="hasServingSizeError()"
+            id="serving-size-input"
+            type="text"
+            placeholder="100"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            maxlength="4"
+            min="1"
+            autocomplete="off"
+            [value]="servingSizeValue()"
+            (beforeinput)="restrictServingSizeInput($event)"
+            (input)="updateServingSizeValue($any($event.target).value)"
+            (paste)="blockInvalidServingSizePaste($event)"
+          />
+
+          <div class="serving-size-dropdown">
+            <button
+              class="serving-size-unit"
+              [class.serving-size-unit-open]="isUnitMenuOpen()"
+              type="button"
+              (click)="toggleUnitMenu()"
+              [attr.aria-expanded]="isUnitMenuOpen()"
+              aria-haspopup="listbox"
+            >
+              <span>{{ selectedUnit() }}</span>
+              <img
+                class="serving-size-unit-arrow"
+                src="Icons/arrow_drop_down.svg"
+                width="10"
+                height="5"
+                alt=""
+                aria-hidden="true"
+              />
+            </button>
+
+            @if (isUnitMenuOpen()) {
+              <div class="serving-size-menu" role="listbox" aria-label="Serving size unit options">
+                @for (unit of availableUnits(); track unit) {
+                  <button class="serving-size-menu-item" type="button" (click)="selectUnit(unit)">
+                    {{ unit }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <button
+          class="ingredient-add"
+          type="button"
+          aria-label="Add ingredient"
+          (click)="addIngredient()"
+        >
+          <img src="Icons/add_2.svg" width="24" height="24" alt="" aria-hidden="true" />
+        </button>
+      </div>
+
+      <p
+        class="ingredient-feedback"
+        [class.ingredient-feedback-visible]="hasFormFeedback()"
+        aria-live="polite"
+      >
+        {{ formFeedback() }}
+      </p>
+
+    </section>
+
+    <section class="ingredient-list-panel" aria-labelledby="ingredient-list-title">
+      <h2 class="ingredient-list-title" id="ingredient-list-title">List of your Ingredients</h2>
+
+      @if (ingredientEntries().length > 0) {
+        <div class="ingredient-list" aria-label="Added ingredients">
+          @for (entry of ingredientEntries(); track entry.id) {
+            <div class="ingredient-list-item">
+              <div class="ingredient-list-copy">
+                <span class="ingredient-list-bullet" aria-hidden="true">•</span>
+                <span class="ingredient-list-amount">{{ formatIngredientAmount(entry) }}</span>
+                <span class="ingredient-list-name">{{ entry.name }}</span>
+              </div>
+
+              <div class="ingredient-list-actions">
+                <button
+                  class="ingredient-list-action"
+                  type="button"
+                  aria-label="Edit ingredient"
+                  (click)="editIngredient(entry)"
+                >
+                  <img src="Icons/frame-975.svg" alt="" aria-hidden="true" />
+                </button>
+
+                <button
+                  class="ingredient-list-action"
+                  type="button"
+                  aria-label="Delete ingredient"
+                  (click)="deleteIngredient(entry.id)"
+                >
+                  <img src="Icons/delete.svg" alt="" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </section>
+  </div>
+
+  @if (canShowNextStepButton()) {
+    <div class="generate-actions">
+      <button class="next-step-button" type="button" routerLink="/preferences">Next step</button>
+    </div>
+  }
+</main>

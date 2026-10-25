@@ -1,0 +1,286 @@
+<header class="preferences-header">
+  <div class="preferences-header-branding">
+    <a class="preferences-brand" routerLink="/" aria-label="Back to home page">
+      <object
+        class="preferences-brand-media"
+        data="Icons/Capa_green.svg?v=1"
+        type="image/svg+xml"
+        aria-label="Code-a-Cuisine"
+      >
+        <span class="preferences-brand-fallback">Code a Cuisine</span>
+      </object>
+    </a>
+
+    <a class="preferences-back-link" routerLink="/generate-recipe" aria-label="Back to ingredients">
+      <img src="Icons/arrow-11.svg" width="22" height="15" alt="" aria-hidden="true" />
+      <span>Ingredients</span>
+    </a>
+  </div>
+</header>
+
+<main class="preferences-page" aria-label="Preferences page">
+  <section class="preferences-shell" aria-labelledby="preferences-title">
+    <h1 class="preferences-title" id="preferences-title">Choose your preferences</h1>
+
+    <div class="preferences-grid">
+      <section class="preference-group" aria-labelledby="portions-title">
+        <h2 class="preference-label" id="portions-title">How many portions you need?</h2>
+
+        <div class="preference-stepper" aria-label="Portions selector">
+          <button
+            class="preference-icon-button"
+            type="button"
+            aria-label="Decrease portions"
+            (click)="decreasePortions()"
+          >
+            <img src="Icons/Minus.svg" width="28" height="28" alt="" aria-hidden="true" />
+          </button>
+
+          <span class="preference-count-box" aria-live="polite">{{ portions() }}</span>
+
+          <p class="preference-unit">Portions</p>
+
+          <button
+            class="preference-icon-button"
+            type="button"
+            aria-label="Increase portions"
+            (click)="increasePortions()"
+          >
+            <img src="Icons/Plus.svg" width="28" height="28" alt="" aria-hidden="true" />
+          </button>
+        </div>
+      </section>
+
+      <section class="preference-group" aria-labelledby="persons-title">
+        <h2 class="preference-label" id="persons-title">How many are cooking?</h2>
+
+        <div class="preference-stepper" aria-label="Persons selector">
+          <button
+            class="preference-icon-button"
+            type="button"
+            aria-label="Decrease persons"
+            (click)="decreasePersons()"
+          >
+            <img src="Icons/Minus.svg" width="28" height="28" alt="" aria-hidden="true" />
+          </button>
+
+          <span class="preference-count-box" aria-live="polite">{{ persons() }}</span>
+
+          <p class="preference-unit">Person</p>
+
+          <button
+            class="preference-icon-button"
+            type="button"
+            aria-label="Increase persons"
+            (click)="increasePersons()"
+          >
+            <img src="Icons/Plus.svg" width="28" height="28" alt="" aria-hidden="true" />
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <section class="preferences-panel" aria-label="Preferences options">
+      <section class="preferences-panel-section" aria-labelledby="cooking-time-title">
+        <div class="preferences-panel-section-heading">
+          <img src="Icons/schedule.svg" width="30" height="30" alt="" aria-hidden="true" />
+          <h2 class="preferences-panel-title" id="cooking-time-title">Cooking time:</h2>
+        </div>
+
+        <div class="preferences-chip-grid preferences-chip-grid-cooking">
+          <div class="preferences-chip-option">
+            <button
+              class="preferences-chip"
+              [class.preferences-chip-selected]="selectedCookingTime() === 'Quick'"
+              type="button"
+              (click)="selectCookingTime('Quick')"
+            >
+              Quick
+            </button>
+            <span class="preferences-chip-caption">up to 20min</span>
+          </div>
+
+          <div class="preferences-chip-option">
+            <button
+              class="preferences-chip"
+              [class.preferences-chip-selected]="selectedCookingTime() === 'Medium'"
+              type="button"
+              (click)="selectCookingTime('Medium')"
+            >
+              Medium
+            </button>
+            <span class="preferences-chip-caption">20–45min</span>
+          </div>
+
+          <div class="preferences-chip-option">
+            <button
+              class="preferences-chip"
+              [class.preferences-chip-selected]="selectedCookingTime() === 'Complex'"
+              type="button"
+              (click)="selectCookingTime('Complex')"
+            >
+              Complex
+            </button>
+            <span class="preferences-chip-caption">over 45min</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="preferences-panel-section" aria-labelledby="cuisine-title">
+        <div class="preferences-panel-section-heading">
+          <img src="Icons/public.svg" width="30" height="30" alt="" aria-hidden="true" />
+          <h2 class="preferences-panel-title" id="cuisine-title">Cuisine</h2>
+        </div>
+
+        <div class="preferences-chip-grid preferences-chip-grid-tags">
+          <button
+            class="preferences-chip"
+            [class.preferences-chip-selected]="selectedCuisine() === 'German'"
+            type="button"
+            (click)="selectCuisine('German')"
+          >
+            German
+          </button>
+          <button
+            class="preferences-chip"
+            [class.preferences-chip-selected]="selectedCuisine() === 'Italian'"
+            type="button"
+            (click)="selectCuisine('Italian')"
+          >
+            Italian
+          </button>
+          <button
+            class="preferences-chip"
+            [class.preferences-chip-selected]="selectedCuisine() === 'Indian'"
+            type="button"
+            (click)="selectCuisine('Indian')"
+          >
+            Indian
+          </button>
+          <button
+            class="preferences-chip"
+            [class.preferences-chip-selected]="selectedCuisine() === 'Japanese'"
+            type="button"
+            (click)="selectCuisine('Japanese')"
+          >
+            Japanese
+          </button>
+          <button
+            class="preferences-chip"
+            [class.preferences-chip-selected]="selectedCuisine() === 'Gourmet'"
+            type="button"
+            (click)="selectCuisine('Gourmet')"
+          >
+            Gourmet
+          </button>
+          <button
+            class="preferences-chip"
+            [class.preferences-chip-selected]="selectedCuisine() === 'Fusion'"
+            type="button"
+            (click)="selectCuisine('Fusion')"
+          >
+            Fusion
+          </button>
+        </div>
+      </section>
+
+      <section class="preferences-panel-section" aria-labelledby="diet-preferences-title">
+        <div class="preferences-panel-section-heading">
+          <img src="Icons/fork_spoon.svg" width="30" height="30" alt="" aria-hidden="true" />
+          <h2 class="preferences-panel-title" id="diet-preferences-title">Diet preferences</h2>
+        </div>
+
+        <div class="preferences-chip-grid preferences-chip-grid-tags">
+          <button
+            class="preferences-chip"
+            [class.preferences-chip-selected]="selectedDietPreference() === 'Vegetarian'"
+            type="button"
+            (click)="selectDietPreference('Vegetarian')"
+          >
+            Vegetarian
+          </button>
+          <button
+            class="preferences-chip"
+            [class.preferences-chip-selected]="selectedDietPreference() === 'Vegan'"
+            type="button"
+            (click)="selectDietPreference('Vegan')"
+          >
+            Vegan
+          </button>
+          <button
+            class="preferences-chip"
+            [class.preferences-chip-selected]="selectedDietPreference() === 'Keto'"
+            type="button"
+            (click)="selectDietPreference('Keto')"
+          >
+            Keto
+          </button>
+          <button
+            class="preferences-chip"
+            [class.preferences-chip-selected]="selectedDietPreference() === 'No preferences'"
+            type="button"
+            (click)="selectDietPreference('No preferences')"
+          >
+            No preferences
+          </button>
+        </div>
+      </section>
+    </section>
+
+    <div class="preferences-generate-actions">
+      <button
+        class="preferences-generate-button"
+        [class.preferences-generate-button-disabled]="!hasAllRequiredPreferences()"
+        type="button"
+        aria-label="Generate a recipe"
+        [attr.aria-disabled]="!hasAllRequiredPreferences()"
+        (click)="generateRecipe()"
+      >
+        <img src="Icons/generate-recept.svg" width="351" height="84" alt="" aria-hidden="true" />
+      </button>
+
+      <p
+        class="preferences-validation-message"
+        [class.preferences-validation-message-visible]="preferenceValidationMessage().length > 0"
+        aria-live="polite"
+      >
+        {{ preferenceValidationMessage() }}
+      </p>
+    </div>
+  </section>
+</main>
+
+@if (isQuantityPopupOpen()) {
+  <div class="preferences-popup-backdrop" (click)="closeQuantityPopup()">
+    <section
+      class="preferences-popup"
+      aria-labelledby="preferences-popup-title"
+      aria-modal="true"
+      role="dialog"
+      (click)="$event.stopPropagation()"
+    >
+      <button
+        class="preferences-popup-close"
+        type="button"
+        aria-label="Close popup"
+        (click)="closeQuantityPopup()"
+      >
+        ×
+      </button>
+
+      <h2 class="preferences-popup-title" id="preferences-popup-title">
+        Please check your ingredients
+      </h2>
+
+      <p class="preferences-popup-copy">
+        Add at least one ingredient with a name, a unit, and a quantity greater than zero, then try
+        again.
+      </p>
+
+      <button class="preferences-popup-link" type="button" (click)="goBackToIngredients()">
+        <span>Go back to ingredients</span>
+        <span aria-hidden="true">→</span>
+      </button>
+    </section>
+  </div>
+}

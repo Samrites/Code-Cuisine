@@ -1,0 +1,65 @@
+<header class="loading-header">
+  <a class="loading-brand" routerLink="/" aria-label="Back to home page">
+    <object
+      class="loading-brand-media"
+      data="Icons/Capa_2.svg?v=1"
+      type="image/svg+xml"
+      aria-label="Code-a-Cuisine"
+    >
+      <span class="loading-brand-fallback">Code a Cuisine</span>
+    </object>
+  </a>
+</header>
+
+<main class="loading-page" aria-label="Loading page">
+  <section class="loading-content" aria-labelledby="loading-title">
+    @if (canShowLoader()) {
+      <img class="loading-visual" [src]="loadingVisualSrc" alt="" aria-hidden="true" />
+      <h1 class="loading-title" id="loading-title">
+        <span>Generating</span>
+        <span class="loading-title-dots" aria-hidden="true">
+          <span class="loading-title-dot">.</span>
+          <span class="loading-title-dot">.</span>
+          <span class="loading-title-dot">.</span>
+        </span>
+      </h1>
+    }
+
+    @if (generationStatus() === 'success' && hasGeneratedRecipes()) {
+      <div class="loading-result" aria-live="polite">
+        <p class="loading-result-label">Recipes generated</p>
+        <h2 class="loading-result-title">{{ generatedRecipes().length }} recipes ready</h2>
+        <p class="loading-result-description">
+          Your recipe ideas are ready and will open in the results view.
+        </p>
+      </div>
+    }
+
+    @if (generationStatus() === 'error') {
+      <div class="loading-error" aria-live="assertive">
+        <h1 class="loading-title" id="loading-title">
+          {{ dailyLimitReached() ? 'Daily limit reached' : 'Generation stopped' }}
+        </h1>
+        <p class="loading-error-message">
+          {{ generationErrorMessage() ?? 'The recipe could not be generated.' }}
+        </p>
+        @if (dailyLimitReached()) {
+          <p class="loading-error-message">
+            Your daily generation allowance is used up. Try again after the daily reset, or browse
+            saved recipes in the cookbook.
+          </p>
+        }
+        <div class="loading-actions">
+          @if (!dailyLimitReached()) {
+            <button class="loading-action-button" type="button" (click)="retryGeneration()">
+              Try again
+            </button>
+          } @else {
+            <a class="loading-action-link" routerLink="/cookbook">Go to cookbook</a>
+          }
+          <a class="loading-action-link" routerLink="/preferences">Back to preferences</a>
+        </div>
+      </div>
+    }
+  </section>
+</main>

@@ -1,0 +1,135 @@
+<header class="cookbook-category-header">
+  <div class="cookbook-category-header-branding">
+    <a class="cookbook-category-brand" routerLink="/" aria-label="Back to home page">
+      <object
+        class="cookbook-category-brand-media"
+        data="Icons/Capa_green.svg?v=1"
+        type="image/svg+xml"
+        aria-label="Code-a-Cuisine"
+      >
+        <span class="cookbook-category-brand-fallback">Code a Cuisine</span>
+      </object>
+    </a>
+
+    <a class="cookbook-category-back-link" routerLink="/cookbook" aria-label="Back to cookbook">
+      <img src="Icons/arrow-11.svg" width="24" height="24" alt="" aria-hidden="true" />
+      <span>Cookbook</span>
+    </a>
+  </div>
+</header>
+
+<main class="cookbook-category-page" aria-label="Cookbook category page">
+  <section class="cookbook-category-shell">
+    <div class="cookbook-category-actions">
+      <a routerLink="/generate-recipe">Generate a recipe</a>
+    </div>
+
+    <div class="cookbook-category-hero" aria-hidden="true">
+      <img
+        class="cookbook-category-hero-desktop"
+        [src]="category().heroSrc"
+        [attr.width]="category().heroWidth"
+        [attr.height]="category().heroHeight"
+        alt=""
+      />
+      <img
+        class="cookbook-category-hero-mobile"
+        [src]="category().mobileHeroSrc"
+        [attr.width]="category().mobileHeroWidth"
+        [attr.height]="category().mobileHeroHeight"
+        alt=""
+      />
+    </div>
+
+    <section class="cookbook-category-recipes" [attr.aria-label]="category().title">
+      @if (cookbookStatus() === 'loading') {
+        <p class="cookbook-category-message" role="status">Loading recipes...</p>
+      } @else if (cookbookStatus() === 'unconfigured') {
+        <p class="cookbook-category-message" role="status">
+          The cookbook is not connected yet. Saved recipes will appear here once it is connected.
+        </p>
+      } @else if (cookbookStatus() === 'error') {
+        <div class="cookbook-category-message" role="status">
+          <p>Recipes could not be loaded. Please try again.</p>
+          <button type="button" (click)="reloadRecipes()">Try again</button>
+        </div>
+      } @else if (!visibleRecipes().length) {
+        <div class="cookbook-category-message" role="status">
+          <p>No recipes in {{ category().title }} yet.</p>
+          <a routerLink="/generate-recipe">Generate a recipe</a>
+        </div>
+      }
+
+      @for (recipe of visibleRecipes(); track $index) {
+        <article
+          class="cookbook-category-row"
+          role="button"
+          tabindex="0"
+          (click)="openRecipe(recipe)"
+          (keydown.enter)="openRecipe(recipe)"
+          (keydown.space)="openRecipe(recipe); $event.preventDefault()"
+        >
+          <div class="cookbook-category-row-index">{{ recipeNumber($index) }}.</div>
+
+          <div class="cookbook-category-row-main">
+            <span class="cookbook-category-row-time">
+              <img src="Icons/schedule.svg" width="20" height="20" alt="" aria-hidden="true" />
+              <span>Cooking time: {{ recipe.prepTime }}</span>
+            </span>
+
+            <h2 class="cookbook-category-row-title">{{ recipe.title }}</h2>
+          </div>
+
+          <div class="cookbook-category-row-tags" aria-label="Recipe tags">
+            @for (badge of recipeMetaTags(recipe); track badge) {
+              <span class="cookbook-category-tag">{{ badge }}</span>
+            }
+
+            <span class="cookbook-category-like-badge">
+              <img src="Icons/favorite.svg" width="14" height="14" alt="" aria-hidden="true" />
+              <span>{{ recipe.likes }}</span>
+            </span>
+          </div>
+        </article>
+      }
+    </section>
+
+    @if (totalPages() > 1) {
+      <nav class="cookbook-category-pagination" aria-label="Recipe list pages">
+        <button
+          type="button"
+          class="cookbook-category-pagination-control"
+          [class.is-disabled]="currentPage() === 1"
+          [disabled]="currentPage() === 1"
+          (click)="changePage(currentPage() - 1)"
+          aria-label="Previous page"
+        >
+          &lt;
+        </button>
+
+        @for (page of pageNumbers(); track page) {
+          <button
+            type="button"
+            class="cookbook-category-pagination-page"
+            [class.is-active]="page === currentPage()"
+            (click)="changePage(page)"
+            [attr.aria-current]="page === currentPage() ? 'page' : null"
+          >
+            {{ page }}
+          </button>
+        }
+
+        <button
+          type="button"
+          class="cookbook-category-pagination-control"
+          [class.is-disabled]="currentPage() === totalPages()"
+          [disabled]="currentPage() === totalPages()"
+          (click)="changePage(currentPage() + 1)"
+          aria-label="Next page"
+        >
+          &gt;
+        </button>
+      </nav>
+    }
+  </section>
+</main>
