@@ -2,9 +2,11 @@
   display: block;
   position: relative;
   width: 100%;
+  min-height: 100vh;
   min-height: 100dvh;
   background: #3a6039;
   color: #faf0e6;
+  overflow: hidden;
 }
 
 .site-header {
@@ -35,6 +37,7 @@
 .page-shell {
   position: relative;
   width: 100%;
+  min-height: 100vh;
   min-height: 100dvh;
   box-sizing: border-box;
   max-width: var(--page-max-width);
@@ -181,6 +184,7 @@
 }
 
 /* Widescreen */
+
 @media (min-width: 1441px) {
   .site-header {
     left: calc(50% - 652px);
@@ -192,9 +196,11 @@
 }
 
 /* Tablet */
+
 @media (min-width: 821px) and (max-width: 1100px) {
   :host,
   .page-shell {
+    min-height: 100vh;
     min-height: 100dvh;
   }
 
@@ -232,9 +238,11 @@
 }
 
 /* Mobile */
+
 @media (max-width: 820px) {
   :host,
   .page-shell {
+    min-height: 100vh;
     min-height: 100dvh;
     height: 100dvh;
   }
@@ -325,6 +333,7 @@
 }
 
 /* Kleine Smartphones */
+
 @media (max-width: 380px) {
   .hero-copy {
     width: calc(100% - 145px);
