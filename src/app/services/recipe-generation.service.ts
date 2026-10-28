@@ -228,7 +228,7 @@ export class RecipeGenerationService {
   }
 }
 
-/** Preserves useful n8n error details instead of replacing every HTTP failure with one message. */
+/** Preserves useful API error details instead of replacing every HTTP failure with one message. */
 function getRequestErrorMessage(error: unknown): string {
   if (error instanceof HttpErrorResponse) {
     const backendMessage = readBackendMessage(error.error);

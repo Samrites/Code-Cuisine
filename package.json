@@ -8,8 +8,7 @@
     "build:ftp": "ng build --base-href /angular-projects/code-cuisine/",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "test:regressions": "node scripts/check-regressions.cjs",
-    "test:n8n": "node scripts/check-n8n-workflow.cjs"
+    "test:regressions": "node scripts/check-regressions.cjs"
   },
   "private": true,
   "packageManager": "npm@11.6.2",
@@ -20,7 +19,6 @@
     "@angular/forms": "^21.2.0",
     "@angular/platform-browser": "^21.2.0",
     "@angular/router": "^21.2.0",
-    "firebase": "^12.11.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },

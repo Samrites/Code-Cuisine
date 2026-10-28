@@ -124,7 +124,7 @@ A generated recipe can contain information such as:
 
 ## Supabase
 
-The current project uses Supabase instead of the previous Firebase/n8n implementation.
+Supabase provides the backend services used by the application.
 
 ### Database
 
@@ -150,7 +150,7 @@ Recipe generation is handled through:
 /functions/v1/generate-recipes
 ```
 
-The Angular frontend does not communicate with n8n in the current implementation.
+The Angular frontend sends recipe-generation requests to this Supabase Edge Function.
 
 ## Responsive design
 
@@ -185,7 +185,7 @@ Generated AI responses should therefore also be requested in English.
 * Generated recipes should be saved to Supabase after successful generation.
 * Saved recipes should appear in the cookbook.
 * The Impressum page remains linked from the home page.
-* Obsolete Firebase and n8n configuration should not be used by the current application.
+* Supabase is used for the current backend and recipe persistence.
 
 ## Build
 
@@ -227,4 +227,4 @@ The project currently uses:
 Angular → Supabase Edge Function → AI generation → Supabase database
 ```
 
-The previous n8n/Firebase implementation is no longer the active architecture.
+Supabase is the active backend architecture for recipe generation and cookbook persistence.
