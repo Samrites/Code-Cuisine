@@ -1,9 +1,13 @@
 import { Component, computed, inject } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { RecipeGenerationService } from '../../services/recipe-generation.service';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+
+import {
+  GeneratedRecipe,
+  StoredCookbookRecipe,
+} from '../../models/recipe.model';
 import { CookbookStoreService } from '../../services/cookbook-store.service';
-import { GeneratedRecipe, StoredCookbookRecipe } from '../../models/recipe.model';
+import { RecipeGenerationService } from '../../services/recipe-generation.service';
 
 type CookbookCategoryConfig = {
   slug: string;
@@ -17,6 +21,7 @@ type CookbookCategoryConfig = {
 };
 
 const PAGE_SIZE = 20;
+
 const DEFAULT_CATEGORY = {
   slug: 'italian',
   title: 'Italian cuisine',
@@ -102,9 +107,11 @@ export class CookbookCategoryPageComponent {
   private readonly router = inject(Router);
   private readonly recipeGeneration = inject(RecipeGenerationService);
   private readonly cookbookStore = inject(CookbookStoreService);
+
   private readonly paramMap = toSignal(this.route.paramMap, {
     initialValue: this.route.snapshot.paramMap,
   });
+
   private readonly queryParamMap = toSignal(this.route.queryParamMap, {
     initialValue: this.route.snapshot.queryParamMap,
   });
@@ -115,32 +122,62 @@ export class CookbookCategoryPageComponent {
   protected readonly category = computed<CookbookCategoryConfig>(() => {
     const slug = this.paramMap().get('category') ?? '';
 
-    const matchingCategory = COOKBOOK_CATEGORY_CONFIGS.find((entry) => entry.slug === slug);
+    const matchingCategory = COOKBOOK_CATEGORY_CONFIGS.find(
+      (entry) => entry.slug === slug,
+    );
 
-    return matchingCategory ?? COOKBOOK_CATEGORY_CONFIGS[0] ?? DEFAULT_CATEGORY;
+    return (
+      matchingCategory ??
+      COOKBOOK_CATEGORY_CONFIGS[0] ??
+      DEFAULT_CATEGORY
+    );
   });
 
   protected readonly currentPage = computed(() => {
-    const rawPage = Number(this.queryParamMap().get('page') ?? '1');
-    const page = Number.isFinite(rawPage) ? Math.floor(rawPage) : 1;
-    return Math.max(1, Math.min(page, this.totalPages()));
+    const rawPage = Number(
+      this.queryParamMap().get('page') ?? '1',
+    );
+
+    const page = Number.isFinite(rawPage)
+      ? Math.floor(rawPage)
+      : 1;
+
+    return Math.max(
+      1,
+      Math.min(page, this.totalPages()),
+    );
   });
 
   private readonly categoryRecipes = computed(() =>
-    this.cookbookStore.recipesByCuisine(this.category().slug),
+    this.cookbookStore.recipesByCuisine(
+      this.category().slug,
+    ),
   );
 
   protected readonly totalPages = computed(() =>
-    Math.max(1, Math.ceil(this.categoryRecipes().length / PAGE_SIZE)),
+    Math.max(
+      1,
+      Math.ceil(
+        this.categoryRecipes().length / PAGE_SIZE,
+      ),
+    ),
   );
 
   protected readonly visibleRecipes = computed(() => {
-    const start = (this.currentPage() - 1) * PAGE_SIZE;
-    return this.categoryRecipes().slice(start, start + PAGE_SIZE);
+    const start =
+      (this.currentPage() - 1) * PAGE_SIZE;
+
+    return this.categoryRecipes().slice(
+      start,
+      start + PAGE_SIZE,
+    );
   });
 
   protected readonly pageNumbers = computed(() =>
-    Array.from({ length: this.totalPages() }, (_, index) => index + 1),
+    Array.from(
+      { length: this.totalPages() },
+      (_, index) => index + 1,
+    ),
   );
 
   /** Retries loading the cookbook after a failed request. */
@@ -149,47 +186,80 @@ export class CookbookCategoryPageComponent {
   }
 
   /** Resolves the visible meta tags shown on each category-row card. */
-  protected recipeMetaTags(recipe: StoredCookbookRecipe): string[] {
+  protected recipeMetaTags(
+    recipe: StoredCookbookRecipe,
+  ): string[] {
     const tags: string[] = [];
 
     if (recipe.dietTag) {
       tags.push(recipe.dietTag);
     }
 
-    tags.push(getCookingTimeCategory(recipe.prepTime));
+    tags.push(
+      getCookingTimeCategory(recipe.prepTime),
+    );
+
     return tags;
   }
 
   /** Opens the selected cookbook recipe in the preparation view. */
-  protected openRecipe(recipe: GeneratedRecipe): void {
+  protected openRecipe(
+    recipe: GeneratedRecipe,
+  ): void {
     this.recipeGeneration.selectRecipe(recipe);
-    void this.router.navigate(['/preparation'], { queryParams: { from: 'cookbook' } });
+
+    void this.router.navigate(['/preparation'], {
+      queryParams: {
+        from: 'cookbook',
+      },
+    });
   }
 
   /** Converts the recipe index on the current page into the absolute list position. */
-  protected recipeNumber(indexOnPage: number): number {
-    return (this.currentPage() - 1) * PAGE_SIZE + indexOnPage + 1;
+  protected recipeNumber(
+    indexOnPage: number,
+  ): number {
+    return (
+      (this.currentPage() - 1) *
+        PAGE_SIZE +
+      indexOnPage +
+      1
+    );
   }
 
   /** Updates the active category-page query parameter for pagination. */
   protected changePage(page: number): void {
-    if (page < 1 || page > this.totalPages() || page === this.currentPage()) {
+    if (
+      page < 1 ||
+      page > this.totalPages() ||
+      page === this.currentPage()
+    ) {
       return;
     }
 
     void this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { page },
+      queryParams: {
+        page,
+      },
       queryParamsHandling: 'merge',
     });
   }
 }
 
 /** Maps a compact preparation-time label to the display category badges. */
-function getCookingTimeCategory(prepTime: string): 'Quick' | 'Medium' | 'Complex' {
-  const minutes = Number.parseInt(prepTime.replace(/\D/g, ''), 10);
+function getCookingTimeCategory(
+  prepTime: string,
+): 'Quick' | 'Medium' | 'Complex' {
+  const minutes = Number.parseInt(
+    prepTime.replace(/\D/g, ''),
+    10,
+  );
 
-  if (Number.isNaN(minutes) || minutes <= 20) {
+  if (
+    Number.isNaN(minutes) ||
+    minutes <= 20
+  ) {
     return 'Quick';
   }
 

@@ -1,9 +1,10 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { RecipeGenerationService } from '../../services/recipe-generation.service';
+
+import { GeneratedRecipe } from '../../models/recipe.model';
 import { CookbookStoreService } from '../../services/cookbook-store.service';
 import { CuisineIconService } from '../../services/cuisine-icon.service';
-import { GeneratedRecipe } from '../../models/recipe.model';
+import { RecipeGenerationService } from '../../services/recipe-generation.service';
 
 type CookbookCuisineCategory = {
   slug: string;
@@ -12,12 +13,36 @@ type CookbookCuisineCategory = {
 };
 
 const COOKBOOK_CUISINE_CATEGORIES: CookbookCuisineCategory[] = [
-  { slug: 'italian', title: 'Italian cuisine', imagePath: 'Icons/italien.svg' },
-  { slug: 'german', title: 'German cuisine', imagePath: 'Icons/german.svg' },
-  { slug: 'japanese', title: 'Japanese cuisine', imagePath: 'Icons/japan.svg' },
-  { slug: 'gourmet', title: 'Gourmet cuisine', imagePath: 'Icons/gourmet.svg' },
-  { slug: 'indian', title: 'Indian cuisine', imagePath: 'Icons/indien.svg' },
-  { slug: 'fusion', title: 'Fusion cuisine', imagePath: 'Icons/fusion.svg' },
+  {
+    slug: 'italian',
+    title: 'Italian cuisine',
+    imagePath: 'Icons/italien.svg',
+  },
+  {
+    slug: 'german',
+    title: 'German cuisine',
+    imagePath: 'Icons/german.svg',
+  },
+  {
+    slug: 'japanese',
+    title: 'Japanese cuisine',
+    imagePath: 'Icons/japan.svg',
+  },
+  {
+    slug: 'gourmet',
+    title: 'Gourmet cuisine',
+    imagePath: 'Icons/gourmet.svg',
+  },
+  {
+    slug: 'indian',
+    title: 'Indian cuisine',
+    imagePath: 'Icons/indien.svg',
+  },
+  {
+    slug: 'fusion',
+    title: 'Fusion cuisine',
+    imagePath: 'Icons/fusion.svg',
+  },
 ];
 
 @Component({
@@ -30,6 +55,7 @@ export class CookbookPageComponent {
   private readonly recipeGeneration = inject(RecipeGenerationService);
   private readonly cookbookStore = inject(CookbookStoreService);
   private readonly router = inject(Router);
+
   protected readonly cuisineIcons = inject(CuisineIconService).icons;
   protected readonly cookbookStatus = this.cookbookStore.loadStatus;
   protected readonly likedRecipes = this.cookbookStore.topLikedRecipes;
@@ -38,6 +64,11 @@ export class CookbookPageComponent {
   /** Opens a stored cookbook recipe in the shared preparation view. */
   protected openRecipe(recipe: GeneratedRecipe): void {
     this.recipeGeneration.selectRecipe(recipe);
-    void this.router.navigate(['/preparation'], { queryParams: { from: 'cookbook' } });
+
+    void this.router.navigate(['/preparation'], {
+      queryParams: {
+        from: 'cookbook',
+      },
+    });
   }
 }
