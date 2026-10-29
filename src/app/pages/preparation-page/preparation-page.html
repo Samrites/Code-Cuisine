@@ -16,7 +16,13 @@
       [routerLink]="backLinkTarget"
       [attr.aria-label]="backLinkAriaLabel"
     >
-      <img src="Icons/arrow-11.svg" width="24" height="24" alt="" aria-hidden="true" />
+      <img
+        src="Icons/arrow-11.svg"
+        width="24"
+        height="24"
+        alt=""
+        aria-hidden="true"
+      />
       <span>{{ backLinkLabel }}</span>
     </a>
   </div>
@@ -30,17 +36,26 @@
           <div class="preparation-intro-main">
             <div class="preparation-meta">
               <div class="preparation-meta-item">
-                <img src="Icons/schedule.svg" width="24" height="24" alt="" aria-hidden="true" />
+                <img
+                  src="Icons/schedule.svg"
+                  width="24"
+                  height="24"
+                  alt=""
+                  aria-hidden="true"
+                />
                 <span>Cooking time: {{ recipe.prepTime }}</span>
               </div>
             </div>
 
-            <h1 class="preparation-title" id="preparation-title">{{ recipe.title }}</h1>
+            <h1 class="preparation-title" id="preparation-title">
+              {{ recipe.title }}
+            </h1>
 
             <div class="preparation-chefs">
-              <span class="preparation-chefs-label"
-                >Cooking person: {{ cookingPersonsLabel() }}</span
-              >
+              <span class="preparation-chefs-label">
+                {{ cookingPersonsLabel() === 1 ? 'Cooking person' : 'Cooking persons' }}:
+                {{ cookingPersonsLabel() }}
+              </span>
 
               @for (cookLabelSource of cookLabelSources(); track cookLabelSource) {
                 <img
@@ -59,23 +74,35 @@
                 @for (tag of selectedPreferenceTags(); track tag) {
                   <span class="preparation-tag">{{ tag }}</span>
                 }
+
                 <span
                   class="preparation-tag preparation-like-tag"
                   [attr.aria-label]="recipe.likes + ' likes'"
-                  ><img src="Icons/favorite.svg" width="20" height="20" alt="" />{{
-                    recipe.likes
-                  }}</span
                 >
+                  <img
+                    src="Icons/favorite.svg"
+                    width="20"
+                    height="20"
+                    alt=""
+                  />
+                  {{ recipe.likes }}
+                </span>
               </div>
 
               <div class="preparation-nutrition">
-                <h2 class="preparation-nutrition-title">Nutritional information</h2>
+                <h2 class="preparation-nutrition-title">
+                  Nutritional information
+                </h2>
 
                 <div class="preparation-nutrition-grid">
                   @for (fact of nutritionFacts(); track fact.label) {
                     <div class="preparation-nutrition-item">
-                      <span class="preparation-nutrition-label">{{ fact.label }}</span>
-                      <span class="preparation-nutrition-value">{{ fact.value }}</span>
+                      <span class="preparation-nutrition-label">
+                        {{ fact.label }}
+                      </span>
+                      <span class="preparation-nutrition-value">
+                        {{ fact.value }}
+                      </span>
                     </div>
                   }
                 </div>
@@ -95,6 +122,7 @@
             height="148"
             alt=""
           />
+
           <img
             class="preparation-section-hero-mobile"
             src="Icons/Hero-inged-mobile.svg"
@@ -104,23 +132,35 @@
           />
         </div>
 
-        <section class="preparation-ingredients-section" aria-labelledby="ingredients-title">
-          <h2 class="preparation-card-title preparation-card-title-sr-only" id="ingredients-title">
+        <section
+          class="preparation-ingredients-section"
+          aria-labelledby="ingredients-title"
+        >
+          <h2
+            class="preparation-card-title preparation-card-title-sr-only"
+            id="ingredients-title"
+          >
             Ingredients
           </h2>
+
           @if (!isMobileLayout() || !ingredientsCollapsed()) {
             <div class="preparation-ingredients-grid">
               <section
                 class="preparation-ingredients-column"
                 aria-labelledby="your-ingredients-title"
               >
-                <h3 class="preparation-ingredients-heading" id="your-ingredients-title">
+                <h3
+                  class="preparation-ingredients-heading"
+                  id="your-ingredients-title"
+                >
                   Your ingredients
                 </h3>
 
                 <ul class="preparation-ingredients-list">
                   @for (ingredient of ingredientColumns().yourIngredients; track ingredient) {
-                    <li class="preparation-ingredients-item">{{ ingredient }}</li>
+                    <li class="preparation-ingredients-item">
+                      {{ ingredient }}
+                    </li>
                   }
                 </ul>
               </section>
@@ -129,13 +169,18 @@
                 class="preparation-ingredients-column"
                 aria-labelledby="extra-ingredients-title"
               >
-                <h3 class="preparation-ingredients-heading" id="extra-ingredients-title">
+                <h3
+                  class="preparation-ingredients-heading"
+                  id="extra-ingredients-title"
+                >
                   Extra ingredients
                 </h3>
 
                 <ul class="preparation-ingredients-list">
                   @for (ingredient of ingredientColumns().extraIngredients; track ingredient) {
-                    <li class="preparation-ingredients-item">{{ ingredient }}</li>
+                    <li class="preparation-ingredients-item">
+                      {{ ingredient }}
+                    </li>
                   }
                 </ul>
               </section>
@@ -151,7 +196,10 @@
               aria-controls="ingredients-title"
               (click)="toggleIngredients()"
             >
-              <span>{{ ingredientsCollapsed() ? 'Show ingredients' : 'Hide ingredients' }}</span>
+              <span>
+                {{ ingredientsCollapsed() ? 'Show ingredients' : 'Hide ingredients' }}
+              </span>
+
               <img
                 src="Icons/arrow_drop_down.svg"
                 width="24"
@@ -174,6 +222,7 @@
             height="134"
             alt=""
           />
+
           <img
             class="preparation-section-hero-mobile"
             src="Icons/hero-dir-mobile.svg"
@@ -183,8 +232,14 @@
           />
         </div>
 
-        <section class="preparation-directions-section" aria-labelledby="steps-title">
-          <h2 class="preparation-card-title preparation-card-title-sr-only" id="steps-title">
+        <section
+          class="preparation-directions-section"
+          aria-labelledby="steps-title"
+        >
+          <h2
+            class="preparation-card-title preparation-card-title-sr-only"
+            id="steps-title"
+          >
             Directions
           </h2>
 
@@ -193,8 +248,14 @@
               @for (direction of preparationDirections(); track direction.number) {
                 <article class="preparation-direction-item">
                   <div class="preparation-direction-title-row">
-                    <span class="preparation-direction-number">{{ direction.number }}.</span>
-                    <h3 class="preparation-direction-title">{{ direction.title }}</h3>
+                    <span class="preparation-direction-number">
+                      {{ direction.number }}.
+                    </span>
+
+                    <h3 class="preparation-direction-title">
+                      {{ direction.title }}
+                    </h3>
+
                     <img
                       class="preparation-direction-cook-label"
                       [src]="direction.cookLabelSource"
@@ -203,12 +264,20 @@
                     />
                   </div>
 
-                  <p class="preparation-direction-text">{{ direction.text }}</p>
+                  <p class="preparation-direction-text">
+                    {{ direction.text }}
+                  </p>
+
                   @if (direction.parallelizable) {
-                    <p class="preparation-step-note">Can run in parallel</p>
+                    <p class="preparation-step-note">
+                      Can run in parallel
+                    </p>
                   }
+
                   @if (direction.durationMinutes !== null) {
-                    <p class="preparation-step-note">{{ direction.durationMinutes }} min</p>
+                    <p class="preparation-step-note">
+                      {{ direction.durationMinutes }} min
+                    </p>
                   }
                 </article>
               }
@@ -224,7 +293,10 @@
               aria-controls="steps-title"
               (click)="toggleDirections()"
             >
-              <span>{{ directionsCollapsed() ? 'Show directions' : 'Hide directions' }}</span>
+              <span>
+                {{ directionsCollapsed() ? 'Show directions' : 'Hide directions' }}
+              </span>
+
               <img
                 src="Icons/arrow_drop_down.svg"
                 width="24"
@@ -236,9 +308,15 @@
           }
         </section>
 
-        <section class="preparation-like-section" aria-label="Recipe feedback">
+        <section
+          class="preparation-like-section"
+          aria-label="Recipe feedback"
+        >
           <div class="preparation-like-copy">
-            <p class="preparation-like-title">Just finished this meal?</p>
+            <p class="preparation-like-title">
+              Just finished this meal?
+            </p>
+
             <p class="preparation-like-text">
               Give it a heart, so that the others know this is delicious.
             </p>
@@ -250,7 +328,9 @@
             [class.is-active]="isLiked()"
             [attr.aria-pressed]="isLiked()"
             [attr.aria-label]="
-              isLiked() ? 'Remove heart from this recipe' : 'Give this recipe a heart'
+              isLiked()
+                ? 'Remove heart from this recipe'
+                : 'Give this recipe a heart'
             "
             (click)="toggleLike()"
           >
@@ -277,20 +357,38 @@
         </section>
       </div>
 
-      <section class="preparation-footer-frame" aria-label="Preparation footer area">
-        <p class="preparation-footer-title">Find inspiration for your next culinary adventure!</p>
+      <section
+        class="preparation-footer-frame"
+        aria-label="Preparation footer area"
+      >
+        <p class="preparation-footer-title">
+          Find inspiration for your next culinary adventure!
+        </p>
 
-        <a class="preparation-footer-button" routerLink="/cookbook">Cookbook</a>
+        <a
+          class="preparation-footer-button"
+          routerLink="/cookbook"
+        >
+          Cookbook
+        </a>
       </section>
+
       <details class="preparation-more-details">
-        <summary>Nutrition details and cooking tasks</summary>
+        <summary>
+          Nutrition details and cooking tasks
+        </summary>
+
         <div>
           <details class="preparation-nutrition-details">
-            <summary>Nutrition per portion and total</summary>
+            <summary>
+              Nutrition per portion and total
+            </summary>
+
             <table>
               <caption>
                 Macro nutrients in grams; percentages show their share of macro calories.
               </caption>
+
               <thead>
                 <tr>
                   <th scope="col">Nutrient</th>
@@ -299,48 +397,78 @@
                   <th scope="col">Share</th>
                 </tr>
               </thead>
+
               <tbody>
                 <tr>
                   <th scope="row">Energy</th>
-                  <td>{{ recipe.nutrition?.perPortion?.calories ?? '—' }} kcal</td>
-                  <td>{{ recipe.nutrition?.total?.calories ?? '—' }} kcal</td>
+                  <td>
+                    {{ recipe.nutrition?.perPortion?.calories ?? '—' }} kcal
+                  </td>
+                  <td>
+                    {{ recipe.nutrition?.total?.calories ?? '—' }} kcal
+                  </td>
                   <td>—</td>
                 </tr>
+
                 @for (macro of macroNutrition(); track macro.label) {
                   <tr>
-                    <th scope="row">{{ macro.label }}</th>
+                    <th scope="row">
+                      {{ macro.label }}
+                    </th>
                     <td>{{ macro.portion }}</td>
                     <td>{{ macro.total }}</td>
-                    <td>{{ macro.percent === null ? '—' : macro.percent + '%' }}</td>
+                    <td>
+                      {{ macro.percent === null ? '—' : macro.percent + '%' }}
+                    </td>
                   </tr>
                 }
               </tbody>
             </table>
+
             @for (macro of macroNutrition(); track macro.label) {
               @if (macro.percent !== null) {
-                <label class="preparation-macro-bar"
-                  >{{ macro.label }} {{ macro.percent }}%
-                  <meter min="0" max="100" [value]="macro.percent">{{ macro.percent }}%</meter>
+                <label class="preparation-macro-bar">
+                  {{ macro.label }} {{ macro.percent }}%
+                  <meter
+                    min="0"
+                    max="100"
+                    [value]="macro.percent"
+                  >
+                    {{ macro.percent }}%
+                  </meter>
                 </label>
               }
             }
           </details>
+
           @if (cookingPersonsLabel() > 1) {
             <details class="preparation-helper-tasks">
-              <summary>Tasks for each cook</summary>
+              <summary>
+                Tasks for each cook
+              </summary>
+
               <div class="preparation-helper-grid">
                 @for (helper of helperTasks(); track helper.cook) {
-                  <section [attr.aria-label]="'Tasks for cook ' + helper.cook">
-                    <img [src]="helper.label" [alt]="'Chef ' + helper.cook" />
+                  <section
+                    [attr.aria-label]="'Tasks for cook ' + helper.cook"
+                  >
+                    <img
+                      [src]="helper.label"
+                      [alt]="'Chef ' + helper.cook"
+                    />
+
                     <ol>
                       @for (task of helper.tasks; track task.number) {
                         <li>
-                          <label
-                            ><input type="checkbox" /> {{ task.number }}. {{ task.title }}</label
-                          >
+                          <label>
+                            <input type="checkbox" />
+                            {{ task.number }}. {{ task.title }}
+                          </label>
                         </li>
                       } @empty {
-                        <li>No assigned tasks in this recipe.</li>
+                        <li>
+                          No assigned tasks in this recipe.
+                        </li>
                       }
                     </ol>
                   </section>
@@ -350,18 +478,40 @@
           }
         </div>
       </details>
-      <a class="preparation-generate-link" routerLink="/generate-recipe"
-        >Generate new recipe <img src="Icons/arrow-11.svg" width="34" height="34" alt=""
-      /></a>
+
+      <a
+        class="preparation-generate-link"
+        routerLink="/generate-recipe"
+      >
+        Generate new recipe
+        <img
+          src="Icons/arrow-11.svg"
+          width="34"
+          height="34"
+          alt=""
+        />
+      </a>
     </section>
   } @else {
     <section class="preparation-shell">
-      <section class="preparation-card preparation-card-empty" aria-live="polite">
-        <h1 class="preparation-card-title">No recipe selected</h1>
+      <section
+        class="preparation-card preparation-card-empty"
+        aria-live="polite"
+      >
+        <h1 class="preparation-card-title">
+          No recipe selected
+        </h1>
+
         <p class="preparation-description">
           Choose one of the recipe cards on the results page to open the preparation view.
         </p>
-        <a class="preparation-empty-link" routerLink="/results">Back to results</a>
+
+        <a
+          class="preparation-empty-link"
+          routerLink="/results"
+        >
+          Back to results
+        </a>
       </section>
     </section>
   }
