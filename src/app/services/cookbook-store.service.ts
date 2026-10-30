@@ -44,8 +44,11 @@ export class CookbookStoreService {
    * Returns all stored recipes that belong to the selected cuisine.
    */
   recipesByCuisine(slug: string): StoredCookbookRecipe[] {
+    const normalizedSlug = normalizeCuisineSlug(slug);
+
     return this.recipesState().filter(
-      (recipe) => recipe.cuisineSlug === slug,
+      (recipe) =>
+        normalizeCuisineSlug(recipe.cuisineSlug) === normalizedSlug,
     );
   }
 
@@ -85,10 +88,17 @@ export class CookbookStoreService {
         .map((row) =>
           normalizeStoredRecipe(String(row.id), {
             ...row,
+
+            cuisineSlug: normalizeCuisineSlug(
+              readString(row['cuisine']),
+            ),
+
             prepTimeMinutes: row['cooking_time'],
             cooking_time: row['cooking_time'],
+
             steps: row['instructions'],
             instructions: row['instructions'],
+
             cookCount: row['helpers'],
           }),
         )
@@ -134,24 +144,44 @@ export class CookbookStoreService {
           title: recipe.title,
           description: recipe.description,
 
-          cuisine:
-            recipe.cuisineSlug ??
-            (preferences?.cuisine || 'fusion').toLowerCase(),
+          cuisine: resolveCuisineSlug(
+            recipe,
+            preferences,
+          ),
 
           cooking_time:
             recipe.prepTimeMinutes ??
-            (Number.parseInt(recipe.prepTime, 10) || 0),
+            parsePreparationMinutes(recipe.prepTime),
 
-          servings: preferences?.portions ?? 2,
+          servings:
+            preferences?.portions ?? 2,
 
           helpers:
             recipe.cookCount ??
             preferences?.persons ??
             1,
 
-          ingredients: recipe.ingredients,
-          instructions: recipe.steps,
-          nutrition: recipe.nutrition ?? null,
+          /**
+           * Keep the ingredient source information inside
+           * the existing Supabase JSON ingredients column.
+           *
+           * This allows the cookbook to restore the
+           * "Your ingredients" and "Extra ingredients"
+           * sections after a page reload.
+           */
+          ingredients: buildStoredIngredients(recipe),
+
+          /**
+           * Keep the complete preparation metadata inside
+           * the existing Supabase JSON instructions column.
+           *
+           * This preserves Chef 1 / Chef 2 / Chef 3,
+           * parallel information and duration.
+           */
+          instructions: buildStoredInstructions(recipe),
+
+          nutrition:
+            recipe.nutrition ?? null,
         }));
 
       if (payload.length > 0) {
@@ -201,4 +231,156 @@ export class CookbookStoreService {
       recipe.id,
     );
   }
+}
+
+/**
+ * Builds the ingredient JSON stored in Supabase.
+ *
+ * New recipes keep their source metadata so the
+ * preparation page can restore both ingredient groups.
+ */
+function buildStoredIngredients(
+  recipe: GeneratedRecipe,
+): Array<{
+  name: string;
+  source: 'user' | 'extra';
+}> {
+  const userIngredients =
+    recipe.userIngredients?.filter(Boolean) ?? [];
+
+  const extraIngredients =
+    recipe.extraIngredients?.filter(Boolean) ?? [];
+
+  if (
+    userIngredients.length > 0 ||
+    extraIngredients.length > 0
+  ) {
+    return [
+      ...userIngredients.map((ingredient) => ({
+        name: ingredient,
+        source: 'user' as const,
+      })),
+
+      ...extraIngredients.map((ingredient) => ({
+        name: ingredient,
+        source: 'extra' as const,
+      })),
+    ];
+  }
+
+  return recipe.ingredients
+    .filter(Boolean)
+    .map((ingredient) => ({
+      name: ingredient,
+      source: 'user' as const,
+    }));
+}
+
+/**
+ * Builds the instruction JSON stored in Supabase.
+ *
+ * Structured step details are preferred because they
+ * preserve cook assignments and preparation metadata.
+ */
+function buildStoredInstructions(
+  recipe: GeneratedRecipe,
+): Array<
+  | string
+  | {
+      title: string;
+      description: string;
+      assignedCook: number;
+      parallelizable: boolean;
+      durationMinutes: number | null;
+    }
+> {
+  if (recipe.stepDetails?.length) {
+    return recipe.stepDetails.map((step) => ({
+      title: step.title,
+      description: step.description,
+      assignedCook: step.assignedCook,
+      parallelizable: step.parallelizable,
+      durationMinutes: step.durationMinutes,
+    }));
+  }
+
+  return recipe.steps.filter(Boolean);
+}
+
+/**
+ * Resolves the cuisine used by cookbook category pages.
+ */
+function resolveCuisineSlug(
+  recipe: GeneratedRecipe,
+  preferences: RecipeGenerationPreferences | null,
+): string {
+  const recipeCuisine =
+    normalizeCuisineSlug(recipe.cuisineSlug);
+
+  if (recipeCuisine) {
+    return recipeCuisine;
+  }
+
+  const preferenceCuisine =
+    normalizeCuisineSlug(preferences?.cuisine);
+
+  return preferenceCuisine || 'fusion';
+}
+
+/**
+ * Normalizes all supported cuisine labels and aliases
+ * into the slugs used by cookbook category routes.
+ */
+function normalizeCuisineSlug(
+  value: string | null | undefined,
+): string {
+  const normalized =
+    (value ?? '').trim().toLowerCase();
+
+  const aliases: Record<string, string> = {
+    it: 'italian',
+    italian: 'italian',
+
+    de: 'german',
+    german: 'german',
+
+    jp: 'japanese',
+    japanese: 'japanese',
+
+    in: 'indian',
+    indian: 'indian',
+
+    gourmet: 'gourmet',
+    fusion: 'fusion',
+  };
+
+  return aliases[normalized] ?? normalized;
+}
+
+/**
+ * Safely reads string database values.
+ */
+function readString(
+  value: unknown,
+): string {
+  return typeof value === 'string'
+    ? value
+    : '';
+}
+
+/**
+ * Reads preparation minutes from labels such as
+ * "20 min" when no numeric value is available.
+ */
+function parsePreparationMinutes(
+  prepTime: string,
+): number {
+  const minutes = Number.parseInt(
+    prepTime,
+    10,
+  );
+
+  return Number.isFinite(minutes)
+    ? minutes
+    : 0;
 }
