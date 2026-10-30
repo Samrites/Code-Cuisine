@@ -1,16 +1,19 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom, timeout } from 'rxjs';
+
 import { CookbookStoreService } from './cookbook-store.service';
 import { IngredientDraftStateService } from './ingredient-draft-state.service';
 import { getApiConfig } from '../config/api.config';
 import { getSupabaseConfig } from '../config/supabase.config';
+
 import {
   getRecipeGenerationErrorMessage,
   hasExpectedRecipeCount,
   isRecipeGenerationError,
   type RecipeGenerationResponse,
 } from './recipe-generation-response.utils';
+
 import {
   GeneratedRecipe,
   RecipeGenerationIngredient,
@@ -28,8 +31,26 @@ type PartialGeneratedRecipeResponse = GeneratedRecipe & {
   diet?: string;
   likesCount?: number;
   nutrition?: RecipeNutrition | null;
-  ingredients?: Array<string | { name?: string; amount?: number; unit?: string; source?: string }>;
-  extraIngredients?: Array<string | { name?: string; amount?: number; unit?: string }>;
+
+  ingredients?: Array<
+    | string
+    | {
+        name?: string;
+        amount?: number;
+        unit?: string;
+        source?: string;
+      }
+  >;
+
+  extraIngredients?: Array<
+    | string
+    | {
+        name?: string;
+        amount?: number;
+        unit?: string;
+      }
+  >;
+
   steps?: Array<
     | string
     | {
@@ -40,30 +61,66 @@ type PartialGeneratedRecipeResponse = GeneratedRecipe & {
         durationMinutes?: number;
       }
   >;
-  helperAssignments?: Array<{ person: string; stepIndexes: number[] }>;
+
+  helperAssignments?: Array<{
+    person: string;
+    stepIndexes: number[];
+  }>;
+
   source?: 'library' | 'generated';
 };
 
-type RecipeGenerationStatus = 'idle' | 'loading' | 'success' | 'error';
-type IngredientCollections = { userIngredients: string[]; extraIngredients: string[] };
+type RecipeGenerationStatus =
+  | 'idle'
+  | 'loading'
+  | 'success'
+  | 'error';
+
+type IngredientCollections = {
+  userIngredients: string[];
+  extraIngredients: string[];
+};
 
 @Injectable({ providedIn: 'root' })
 export class RecipeGenerationService {
   private readonly http = inject(HttpClient);
   private readonly cookbookStore = inject(CookbookStoreService);
-  private readonly ingredientDraftState = inject(IngredientDraftStateService);
-  private readonly webhookUrl = getApiConfig().recipeWebhookUrl;
+  private readonly ingredientDraftState = inject(
+    IngredientDraftStateService,
+  );
 
-  readonly generationStatus = signal<RecipeGenerationStatus>('idle');
-  readonly generatedRecipes = signal<GeneratedRecipe[]>([]);
-  readonly selectedRecipe = signal<GeneratedRecipe | null>(null);
-  readonly lastUsedPreferences = signal<RecipeGenerationPreferences | null>(null);
-  readonly generationErrorMessage = signal<string | null>(null);
-  readonly pendingRequest = signal<RecipeGenerationRequest | null>(null);
-  readonly hasPendingRequest = computed(() => this.pendingRequest() !== null);
+  private readonly webhookUrl =
+    getApiConfig().recipeWebhookUrl;
 
-  /** Queues a new generation request and resets stale UI state from earlier runs. */
-  queueRecipeGeneration(request: RecipeGenerationRequest): void {
+  readonly generationStatus =
+    signal<RecipeGenerationStatus>('idle');
+
+  readonly generatedRecipes =
+    signal<GeneratedRecipe[]>([]);
+
+  readonly selectedRecipe =
+    signal<GeneratedRecipe | null>(null);
+
+  readonly lastUsedPreferences =
+    signal<RecipeGenerationPreferences | null>(null);
+
+  readonly generationErrorMessage =
+    signal<string | null>(null);
+
+  readonly pendingRequest =
+    signal<RecipeGenerationRequest | null>(null);
+
+  readonly hasPendingRequest = computed(
+    () => this.pendingRequest() !== null,
+  );
+
+  /**
+   * Queues a new generation request and resets stale UI state
+   * from earlier runs.
+   */
+  queueRecipeGeneration(
+    request: RecipeGenerationRequest,
+  ): void {
     this.pendingRequest.set(request);
     this.lastUsedPreferences.set(request.preferences);
     this.generatedRecipes.set([]);
@@ -72,21 +129,35 @@ export class RecipeGenerationService {
     this.generationStatus.set('idle');
   }
 
-  /** Executes the pending request against the configured recipe endpoint. */
+  /**
+   * Executes the pending request against the configured
+   * recipe endpoint.
+   */
   async generateQueuedRecipe(): Promise<void> {
     const request = this.pendingRequest();
-    if (this.shouldSkipGeneration(request)) return;
-    const activeRequest = request as RecipeGenerationRequest;
+
+    if (this.shouldSkipGeneration(request)) {
+      return;
+    }
+
+    const activeRequest =
+      request as RecipeGenerationRequest;
+
     this.startGeneration();
 
     try {
       await this.handleRecipeResponse(activeRequest);
     } catch (error: unknown) {
-      this.setGenerationError(getRequestErrorMessage(error));
+      this.setGenerationError(
+        getRequestErrorMessage(error),
+      );
     }
   }
 
-  /** Clears transient generation state while preserving the last entered preferences. */
+  /**
+   * Clears transient generation state while preserving
+   * the last entered preferences.
+   */
   resetGenerationState(): void {
     this.generatedRecipes.set([]);
     this.selectedRecipe.set(null);
@@ -94,18 +165,29 @@ export class RecipeGenerationService {
     this.generationStatus.set('idle');
   }
 
-  /** Stores which generated recipe should be opened on the preparation page. */
+  /**
+   * Stores which generated recipe should be opened
+   * on the preparation page.
+   */
   selectRecipe(recipe: GeneratedRecipe): void {
     this.selectedRecipe.set(recipe);
   }
 
-  /** Checks whether a new request should be ignored while one is still running. */
+  /**
+   * Checks whether a new request should be ignored
+   * while one is still running.
+   */
   private isGenerationBlocked(): boolean {
     return this.generationStatus() === 'loading';
   }
 
-  /** Checks whether the current request should be skipped before calling the webhook. */
-  private shouldSkipGeneration(request: RecipeGenerationRequest | null): boolean {
+  /**
+   * Checks whether the current request should be skipped
+   * before calling the webhook.
+   */
+  private shouldSkipGeneration(
+    request: RecipeGenerationRequest | null,
+  ): boolean {
     if (!request || this.isGenerationBlocked()) {
       this.handleMissingRequest(request);
       return true;
@@ -114,81 +196,191 @@ export class RecipeGenerationService {
     return false;
   }
 
-  /** Applies the missing-request error without affecting active generation runs. */
-  private handleMissingRequest(request: RecipeGenerationRequest | null): void {
+  /**
+   * Applies the missing-request error without affecting
+   * active generation runs.
+   */
+  private handleMissingRequest(
+    request: RecipeGenerationRequest | null,
+  ): void {
     if (request) {
       return;
     }
 
-    this.setGenerationError('No recipe request is ready yet.');
+    this.setGenerationError(
+      'No recipe request is ready yet.',
+    );
   }
 
-  /** Sets loading state before the webhook request starts. */
+  /**
+   * Sets loading state before the webhook request starts.
+   */
   private startGeneration(): void {
     this.generationStatus.set('loading');
     this.generationErrorMessage.set(null);
   }
 
-  /** Requests recipes from the recipe endpoint. */
-  private requestRecipes(request: RecipeGenerationRequest): Promise<RecipeGenerationResponse> {
+  /**
+   * Requests recipes from the Supabase Edge Function.
+   */
+  private requestRecipes(
+    request: RecipeGenerationRequest,
+  ): Promise<RecipeGenerationResponse> {
     if (!this.webhookUrl) {
-      return Promise.reject(new Error('Die Rezeptgenerierung benötigt noch eine Supabase Edge Function. Das Kochbuch kann bereits verwendet werden.'));
+      return Promise.reject(
+        new Error(
+          'The recipe generation service is not configured yet.',
+        ),
+      );
     }
+
     const config = getSupabaseConfig();
-    if (!config) return Promise.reject(new Error('Supabase ist nicht konfiguriert.'));
+
+    if (!config) {
+      return Promise.reject(
+        new Error('Supabase is not configured.'),
+      );
+    }
+
+    const cuisine =
+      (
+        {
+          German: 'de',
+          Italian: 'it',
+          Japanese: 'jp',
+          Indian: 'in',
+          Gourmet: 'gourmet',
+          Fusion: 'fusion',
+        } as Record<string, string>
+      )[request.preferences.cuisine ?? ''] ??
+      request.preferences.cuisine ??
+      'fusion';
+
+    const timeCategory =
+      (
+        {
+          Quick: 'quick',
+          Medium: 'medium',
+          Elaborate: 'elaborate',
+          Schnell: 'quick',
+          Mittel: 'medium',
+          Aufwendig: 'elaborate',
+        } as Record<string, string>
+      )[request.preferences.cookingTime ?? ''] ??
+      request.preferences.cookingTime ??
+      'quick';
+
     const body = {
       ingredients: request.ingredients,
       servings: request.preferences.portions,
       helpers: request.preferences.persons,
-      cuisine: ({ German: 'de', Italian: 'it', Japanese: 'jp', Indian: 'in', Gourmet: 'gourmet', Fusion: 'fusion' } as Record<string, string>)[request.preferences.cuisine ?? ''] ?? request.preferences.cuisine ?? 'fusion',
-      timeCategory: ({ Quick: 'quick', Medium: 'medium', Elaborate: 'elaborate', Schnell: 'quick', Mittel: 'medium', Aufwendig: 'elaborate' } as Record<string, string>)[request.preferences.cookingTime ?? ''] ?? request.preferences.cookingTime ?? 'quick',
+      cuisine,
+      timeCategory,
       diet: request.preferences.diet ?? 'none',
       generateCount: EXPECTED_RECIPE_COUNT,
     };
-    return firstValueFrom(this.http.post<RecipeGenerationResponse>(this.webhookUrl, body, {
-      headers: { apikey: config.anonKey },
-    }).pipe(timeout(90000)));
+
+    return firstValueFrom(
+      this.http
+        .post<RecipeGenerationResponse>(
+          this.webhookUrl,
+          body,
+          {
+            headers: {
+              apikey: config.anonKey,
+            },
+          },
+        )
+        .pipe(timeout(90000)),
+    );
   }
 
-  /** Executes the webhook request and applies a valid success response. */
-  private async handleRecipeResponse(request: RecipeGenerationRequest): Promise<void> {
-    const response = await this.requestRecipes(request);
-    const recipes = this.normalizeSuccessfulResponse(response, request);
+  /**
+   * Executes the webhook request and applies
+   * a valid success response.
+   */
+  private async handleRecipeResponse(
+    request: RecipeGenerationRequest,
+  ): Promise<void> {
+    const response =
+      await this.requestRecipes(request);
+
+    const recipes =
+      this.normalizeSuccessfulResponse(
+        response,
+        request,
+      );
 
     if (!recipes) {
       return;
     }
 
-    this.completeGeneration(recipes, request.preferences);
+    this.completeGeneration(
+      recipes,
+      request.preferences,
+    );
   }
 
-  /** Validates the webhook response and normalizes it into UI recipes. */
+  /**
+   * Validates the webhook response and normalizes it
+   * into UI recipes.
+   */
   private normalizeSuccessfulResponse(
     response: RecipeGenerationResponse,
     request: RecipeGenerationRequest,
   ): GeneratedRecipe[] | null {
     if (isRecipeGenerationError(response)) {
-      this.setGenerationError(getRecipeGenerationErrorMessage(response));
+      this.setGenerationError(
+        getRecipeGenerationErrorMessage(response),
+      );
+
       return null;
     }
 
-    if (!this.hasValidRecipeCount(response.recipes)) return null;
+    if (!this.hasValidRecipeCount(response.recipes)) {
+      return null;
+    }
+
+    const adaptedRecipes =
+      response.recipes.map(adaptEdgeRecipe);
+
+    const normalizedRecipes =
+      normalizeRecipesFromResponse(
+        adaptedRecipes,
+        request.preferences,
+        request,
+      );
+
     return this.ensureRecipesExist(
-      normalizeRecipesFromResponse(response.recipes.map(adaptEdgeRecipe), request.preferences, request),
+      normalizedRecipes,
     );
   }
 
-  /** Checks the recipe count and raises the standardized mismatch error when needed. */
-  private hasValidRecipeCount(recipes: GeneratedRecipe[]): boolean {
-    if (hasExpectedRecipeCount(recipes, EXPECTED_RECIPE_COUNT)) {
+  /**
+   * Checks the recipe count and raises the standardized
+   * mismatch error when needed.
+   */
+  private hasValidRecipeCount(
+    recipes: GeneratedRecipe[],
+  ): boolean {
+    if (
+      hasExpectedRecipeCount(
+        recipes,
+        EXPECTED_RECIPE_COUNT,
+      )
+    ) {
       return true;
     }
 
     this.setRecipeCountError(recipes.length);
+
     return false;
   }
 
-  /** Persists the final success state after a valid response. */
+  /**
+   * Persists the final success state after
+   * a valid response.
+   */
   private completeGeneration(
     recipes: GeneratedRecipe[],
     preferences: RecipeGenerationPreferences,
@@ -197,48 +389,83 @@ export class RecipeGenerationService {
     this.selectedRecipe.set(null);
     this.generationStatus.set('success');
     this.pendingRequest.set(null);
+
     this.ingredientDraftState.resetIngredients();
-    void this.cookbookStore.saveGeneratedRecipes(recipes, preferences).catch((error: unknown) => {
-      console.error('Generated recipes could not be saved to the cookbook.', error);
-    });
+
+    void this.cookbookStore
+      .saveGeneratedRecipes(recipes, preferences)
+      .catch((error: unknown) => {
+        console.error(
+          'Generated recipes could not be saved to the cookbook.',
+          error,
+        );
+      });
   }
 
-  /** Raises a consistent error state and clears stale recipe results. */
+  /**
+   * Raises a consistent error state and clears
+   * stale recipe results.
+   */
   private setGenerationError(message: string): void {
     this.generatedRecipes.set([]);
     this.generationStatus.set('error');
     this.generationErrorMessage.set(message);
   }
 
-  /** Raises the standardized wrong-count error from the webhook. */
-  private setRecipeCountError(actualCount: number): void {
+  /**
+   * Raises the standardized wrong-count error
+   * from the webhook.
+   */
+  private setRecipeCountError(
+    actualCount: number,
+  ): void {
     this.setGenerationError(
       `The recipe service returned ${actualCount} recipes instead of ${EXPECTED_RECIPE_COUNT}.`,
     );
   }
 
-  /** Ensures at least one normalized recipe remains before marking success. */
-  private ensureRecipesExist(recipes: GeneratedRecipe[]): GeneratedRecipe[] | null {
+  /**
+   * Ensures at least one normalized recipe remains
+   * before marking success.
+   */
+  private ensureRecipesExist(
+    recipes: GeneratedRecipe[],
+  ): GeneratedRecipe[] | null {
     if (recipes.length) {
       return recipes;
     }
 
-    this.setGenerationError('No recipes were returned.');
+    this.setGenerationError(
+      'No recipes were returned.',
+    );
+
     return null;
   }
 }
 
-/** Preserves useful API error details instead of replacing every HTTP failure with one message. */
-function getRequestErrorMessage(error: unknown): string {
+/**
+ * Preserves useful API error details instead of replacing
+ * every HTTP failure with one message.
+ */
+function getRequestErrorMessage(
+  error: unknown,
+): string {
   if (error instanceof HttpErrorResponse) {
-    const backendMessage = readBackendMessage(error.error);
-    if (backendMessage) return backendMessage;
+    const backendMessage =
+      readBackendMessage(error.error);
+
+    if (backendMessage) {
+      return backendMessage;
+    }
 
     if (error.status === 0) {
       return 'The recipe service could not be reached. Please check the connection and try again.';
     }
 
-    if (error.status === 401 || error.status === 403) {
+    if (
+      error.status === 401 ||
+      error.status === 403
+    ) {
       return 'Supabase rejected the recipe request. Please check the public API key and Edge Function access settings.';
     }
 
@@ -258,48 +485,105 @@ function getRequestErrorMessage(error: unknown): string {
   return 'The recipe service is not reachable right now. Please try again.';
 }
 
-/** Reads the standardized message returned by backend from JSON or plain-text responses. */
-function readBackendMessage(responseBody: unknown): string | null {
-  if (typeof responseBody === 'string' && responseBody.trim()) {
+/**
+ * Reads the standardized message returned by backend
+ * from JSON or plain-text responses.
+ */
+function readBackendMessage(
+  responseBody: unknown,
+): string | null {
+  if (
+    typeof responseBody === 'string' &&
+    responseBody.trim()
+  ) {
     const trimmedBody = responseBody.trim();
 
     try {
-      return readBackendMessage(JSON.parse(trimmedBody)) ?? trimmedBody;
+      return (
+        readBackendMessage(
+          JSON.parse(trimmedBody),
+        ) ?? trimmedBody
+      );
     } catch {
       return trimmedBody;
     }
   }
-  if (typeof responseBody !== 'object' || responseBody === null) return null;
 
-  const message = (responseBody as { message?: unknown; error?: unknown }).message ?? (responseBody as { error?: unknown }).error;
-  return typeof message === 'string' && message.trim() ? message.trim() : null;
+  if (
+    typeof responseBody !== 'object' ||
+    responseBody === null
+  ) {
+    return null;
+  }
+
+  const body = responseBody as {
+    message?: unknown;
+    error?: unknown;
+  };
+
+  const message =
+    body.message ?? body.error;
+
+  return typeof message === 'string' &&
+    message.trim()
+    ? message.trim()
+    : null;
 }
 
-/** Normalizes every recipe returned by the backend into the UI's expected shape. */
+/**
+ * Normalizes every recipe returned by the backend
+ * into the UI's expected shape.
+ */
 function normalizeRecipesFromResponse(
   recipes: GeneratedRecipe[],
   preferences: RecipeGenerationPreferences,
   request: RecipeGenerationRequest,
 ): GeneratedRecipe[] {
-  return recipes.map((recipe) => normalizeRecipe(recipe, preferences, request));
+  return recipes.map((recipe) =>
+    normalizeRecipe(
+      recipe,
+      preferences,
+      request,
+    ),
+  );
 }
 
-/** Fills missing generated-recipe fields from the current request preferences and defaults. */
+/**
+ * Fills missing generated-recipe fields from
+ * current request preferences and defaults.
+ */
 function normalizeRecipe(
   recipe: PartialGeneratedRecipeResponse,
   preferences: RecipeGenerationPreferences,
   request: RecipeGenerationRequest,
 ): GeneratedRecipe {
-  const normalizedIngredients = normalizeIngredientList(recipe.ingredients ?? []);
-  const normalizedExtraIngredients = normalizeIngredientList(recipe.extraIngredients ?? []);
-  const normalizedSteps = normalizeStepList(recipe.steps ?? []);
-  const defaults = buildRecipeDefaults(recipe, preferences);
-  const ingredientCollections = buildRecipeIngredients(
-    recipe,
-    normalizedIngredients,
-    normalizedExtraIngredients,
-    request,
-  );
+  const normalizedIngredients =
+    normalizeIngredientList(
+      recipe.ingredients ?? [],
+    );
+
+  const normalizedExtraIngredients =
+    normalizeIngredientList(
+      recipe.extraIngredients ?? [],
+    );
+
+  const normalizedSteps =
+    normalizeStepList(recipe.steps ?? []);
+
+  const defaults =
+    buildRecipeDefaults(
+      recipe,
+      preferences,
+    );
+
+  const ingredientCollections =
+    buildRecipeIngredients(
+      recipe,
+      normalizedIngredients,
+      normalizedExtraIngredients,
+      request,
+    );
+
   return buildNormalizedRecipe(
     recipe,
     defaults,
@@ -309,74 +593,150 @@ function normalizeRecipe(
   );
 }
 
-/** Converts request or response diet labels into the UI tag format. */
-function normalizeDietTag(diet: string | null): 'Vegetarian' | 'Vegan' | 'Keto' | null {
-  if (diet === 'Vegetarian' || diet === 'Vegan' || diet === 'Keto') {
+/**
+ * Converts request or response diet labels
+ * into the UI tag format.
+ */
+function normalizeDietTag(
+  diet: string | null,
+): 'Vegetarian' | 'Vegan' | 'Keto' | null {
+  if (
+    diet === 'Vegetarian' ||
+    diet === 'Vegan' ||
+    diet === 'Keto'
+  ) {
     return diet;
   }
 
   return null;
 }
 
-/** Converts mixed ingredient payloads into the flat string lists used by the current UI. */
+/**
+ * Converts mixed ingredient payloads into the
+ * flat string lists used by the UI.
+ */
 function normalizeIngredientList(
-  ingredients: Array<string | { name?: string; amount?: number; unit?: string; source?: string }>,
+  ingredients: Array<
+    | string
+    | {
+        name?: string;
+        amount?: number;
+        unit?: string;
+        source?: string;
+      }
+  >,
 ): string[] {
-  return ingredients.map((ingredient) => normalizeIngredientLine(ingredient)).filter(Boolean);
+  return ingredients
+    .map((ingredient) =>
+      normalizeIngredientLine(ingredient),
+    )
+    .filter(Boolean);
 }
 
-/** Converts mixed step payloads into plain instruction strings for the current preparation UI. */
+/**
+ * Converts mixed step payloads into plain
+ * instruction strings.
+ */
 function normalizeStepList(
-  steps: Array<string | { title?: string; description?: string }>,
+  steps: Array<
+    | string
+    | {
+        title?: string;
+        description?: string;
+      }
+  >,
 ): string[] {
-  return steps.map((step) => normalizeStepLine(step)).filter(Boolean);
+  return steps
+    .map((step) =>
+      normalizeStepLine(step),
+    )
+    .filter(Boolean);
 }
 
-/** Formats a structured ingredient object into the line-based representation used by the app. */
-function formatRichIngredientLine(ingredient: {
-  name?: string;
-  amount?: number;
-  unit?: string;
-}): string {
-  const name = String(ingredient.name ?? '').trim();
+/**
+ * Formats a structured ingredient object into
+ * the line-based representation used by the app.
+ */
+function formatRichIngredientLine(
+  ingredient: {
+    name?: string;
+    amount?: number;
+    unit?: string;
+  },
+): string {
+  const name = String(
+    ingredient.name ?? '',
+  ).trim();
 
   if (!name) {
     return '';
   }
 
-  return hasMeasuredIngredient(ingredient) ? formatMeasuredIngredient(name, ingredient) : name;
+  return hasMeasuredIngredient(ingredient)
+    ? formatMeasuredIngredient(
+        name,
+        ingredient,
+      )
+    : name;
 }
 
-/** Formats numeric preparation minutes into the compact badge style used by the UI. */
-function formatPrepTime(minutes: number | undefined): string {
-  if (!minutes || Number.isNaN(minutes)) {
+/**
+ * Formats numeric preparation minutes into
+ * the compact badge style used by the UI.
+ */
+function formatPrepTime(
+  minutes: number | undefined,
+): string {
+  if (
+    !minutes ||
+    Number.isNaN(minutes)
+  ) {
     return '20 min';
   }
 
   return `${minutes} min`;
 }
 
-/** Maps human-readable cuisine labels to the slugs used by the cookbook store. */
-function mapCuisineToSlug(cuisine: string | null): string {
-  return CUISINE_SLUGS[cuisine ?? ''] ?? 'fusion';
+/**
+ * Maps human-readable cuisine labels to
+ * the slugs used by the cookbook store.
+ */
+function mapCuisineToSlug(
+  cuisine: string | null,
+): string {
+  return (
+    CUISINE_SLUGS[cuisine ?? ''] ??
+    'fusion'
+  );
 }
 
-const CUISINE_SLUGS: Record<string, string> = {
+const CUISINE_SLUGS: Record<
+  string,
+  string
+> = {
   Italian: 'italian',
   it: 'italian',
+
   German: 'german',
   de: 'german',
+
   Japanese: 'japanese',
   jp: 'japanese',
+
   Indian: 'indian',
   in: 'indian',
+
   Gourmet: 'gourmet',
   gourmet: 'gourmet',
+
   Fusion: 'fusion',
   fusion: 'fusion',
 };
 
-/** Builds the non-list defaults for a generated recipe. */
+/**
+ * Builds the non-list defaults for
+ * a generated recipe.
+ */
 function buildRecipeDefaults(
   recipe: GeneratedRecipe & {
     cookTimeMinutes?: number;
@@ -387,23 +747,41 @@ function buildRecipeDefaults(
   preferences: RecipeGenerationPreferences,
 ): Partial<GeneratedRecipe> {
   return {
-    ...buildRecipeMetrics(recipe, preferences),
-    ...buildRecipeClassification(recipe, preferences),
+    ...buildRecipeMetrics(
+      recipe,
+      preferences,
+    ),
+
+    ...buildRecipeClassification(
+      recipe,
+      preferences,
+    ),
   };
 }
 
-/** Builds the normalized list fields for the generated recipe model. */
+/**
+ * Builds the normalized list fields
+ * for the generated recipe model.
+ */
 function buildRecipeLists(
   normalizedIngredients: string[],
   normalizedSteps: string[],
-): Pick<GeneratedRecipe, 'ingredients' | 'steps'> {
+): Pick<
+  GeneratedRecipe,
+  'ingredients' | 'steps'
+> {
   return {
-    ingredients: normalizedIngredients.filter(Boolean),
+    ingredients:
+      normalizedIngredients.filter(Boolean),
+
     steps: normalizedSteps,
   };
 }
 
-/** Builds the final normalized recipe object from the prepared recipe parts. */
+/**
+ * Builds the final normalized recipe object
+ * from the prepared recipe parts.
+ */
 function buildNormalizedRecipe(
   recipe: PartialGeneratedRecipeResponse,
   defaults: Partial<GeneratedRecipe>,
@@ -415,136 +793,297 @@ function buildNormalizedRecipe(
     ...recipe,
     ...defaults,
     ...ingredientCollections,
-    ...buildRecipeLists(normalizedIngredients, normalizedSteps),
-    nutrition: recipe.nutrition ?? null,
-    stepDetails: recipe.stepDetails?.length ? recipe.stepDetails : buildStepDetails(recipe),
+
+    ...buildRecipeLists(
+      normalizedIngredients,
+      normalizedSteps,
+    ),
+
+    nutrition:
+      recipe.nutrition ?? null,
+
+    stepDetails:
+      recipe.stepDetails?.length
+        ? recipe.stepDetails
+        : buildStepDetails(recipe),
   };
 }
 
-/** Builds timing and count defaults for a generated recipe. */
+/**
+ * Builds timing and count defaults
+ * for a generated recipe.
+ */
 function buildRecipeMetrics(
-  recipe: GeneratedRecipe & { cookTimeMinutes?: number; likesCount?: number },
+  recipe: GeneratedRecipe & {
+    cookTimeMinutes?: number;
+    likesCount?: number;
+  },
   preferences: RecipeGenerationPreferences,
-): Pick<GeneratedRecipe, 'source' | 'prepTime' | 'prepTimeMinutes' | 'cookCount' | 'likes'> {
+): Pick<
+  GeneratedRecipe,
+  | 'source'
+  | 'prepTime'
+  | 'prepTimeMinutes'
+  | 'cookCount'
+  | 'likes'
+> {
   return {
-    source: recipe.source ?? 'generated',
-    prepTime: recipe.prepTime ?? formatPrepTime(recipe.cookTimeMinutes),
-    prepTimeMinutes: recipe.prepTimeMinutes ?? recipe.cookTimeMinutes ?? null,
-    cookCount: recipe.cookCount ?? Math.max(1, preferences.persons),
-    likes: recipe.likes ?? recipe.likesCount ?? 0,
+    source:
+      recipe.source ?? 'generated',
+
+    prepTime:
+      recipe.prepTime ??
+      formatPrepTime(
+        recipe.cookTimeMinutes,
+      ),
+
+    prepTimeMinutes:
+      recipe.prepTimeMinutes ??
+      recipe.cookTimeMinutes ??
+      null,
+
+    cookCount:
+      recipe.cookCount ??
+      Math.max(
+        1,
+        preferences.persons,
+      ),
+
+    likes:
+      recipe.likes ??
+      recipe.likesCount ??
+      0,
   };
 }
 
-/** Builds classification defaults such as diet tag and cuisine slug. */
+/**
+ * Builds classification defaults such as
+ * diet tag and cuisine slug.
+ */
 function buildRecipeClassification(
-  recipe: GeneratedRecipe & { cuisine?: string; diet?: string },
+  recipe: GeneratedRecipe & {
+    cuisine?: string;
+    diet?: string;
+  },
   preferences: RecipeGenerationPreferences,
-): Pick<GeneratedRecipe, 'dietTag' | 'cuisineSlug'> {
+): Pick<
+  GeneratedRecipe,
+  'dietTag' | 'cuisineSlug'
+> {
   const preferredCuisine =
     recipe.source === 'library'
-      ? (recipe.cuisine ?? null)
-      : (preferences.cuisine ?? recipe.cuisine ?? null);
+      ? recipe.cuisine ?? null
+      : preferences.cuisine ??
+        recipe.cuisine ??
+        null;
 
   return {
-    dietTag: recipe.dietTag ?? normalizeDietTag(recipe.diet ?? preferences.diet),
-    cuisineSlug: recipe.cuisineSlug ?? mapCuisineToSlug(preferredCuisine),
+    dietTag:
+      recipe.dietTag ??
+      normalizeDietTag(
+        recipe.diet ??
+          preferences.diet,
+      ),
+
+    cuisineSlug:
+      recipe.cuisineSlug ??
+      mapCuisineToSlug(
+        preferredCuisine,
+      ),
   };
 }
 
-/** Builds the normalized ingredient collections for a generated recipe. */
+/**
+ * Builds the normalized ingredient collections
+ * for a generated recipe.
+ */
 function buildRecipeIngredients(
   recipe: GeneratedRecipe & {
     ingredients?: Array<
-      string | { name?: string; amount?: number; unit?: string; source?: string }
+      | string
+      | {
+          name?: string;
+          amount?: number;
+          unit?: string;
+          source?: string;
+        }
     >;
   },
   normalizedIngredients: string[],
   normalizedExtraIngredients: string[],
   request: RecipeGenerationRequest,
 ): IngredientCollections {
-  const explicitUserIngredients = recipe.userIngredients?.filter(Boolean) ?? [];
-  const explicitExtraIngredients = normalizedExtraIngredients.filter(Boolean);
-  const requestUserIngredients = normalizeRequestIngredients(request.ingredients);
+  const explicitUserIngredients =
+    recipe.userIngredients?.filter(Boolean) ??
+    [];
 
-  if (explicitUserIngredients.length || explicitExtraIngredients.length) {
+  const explicitExtraIngredients =
+    normalizedExtraIngredients.filter(Boolean);
+
+  const requestUserIngredients =
+    normalizeRequestIngredients(
+      request.ingredients,
+    );
+
+  if (
+    explicitUserIngredients.length ||
+    explicitExtraIngredients.length
+  ) {
     return {
-      userIngredients: explicitUserIngredients.length
-        ? explicitUserIngredients
-        : requestUserIngredients,
-      extraIngredients: explicitExtraIngredients,
+      userIngredients:
+        explicitUserIngredients.length
+          ? explicitUserIngredients
+          : requestUserIngredients,
+
+      extraIngredients:
+        explicitExtraIngredients,
     };
   }
 
-  const sourceSeparatedIngredients = splitIngredientsBySource(recipe.ingredients ?? []);
+  const sourceSeparatedIngredients =
+    splitIngredientsBySource(
+      recipe.ingredients ?? [],
+    );
 
   if (
-    sourceSeparatedIngredients.userIngredients.length ||
-    sourceSeparatedIngredients.extraIngredients.length
+    sourceSeparatedIngredients
+      .userIngredients.length ||
+    sourceSeparatedIngredients
+      .extraIngredients.length
   ) {
     return {
-      userIngredients: sourceSeparatedIngredients.userIngredients.length
-        ? sourceSeparatedIngredients.userIngredients
-        : normalizeRequestIngredients(request.ingredients),
-      extraIngredients: sourceSeparatedIngredients.extraIngredients,
+      userIngredients:
+        sourceSeparatedIngredients
+          .userIngredients.length
+          ? sourceSeparatedIngredients
+              .userIngredients
+          : requestUserIngredients,
+
+      extraIngredients:
+        sourceSeparatedIngredients
+          .extraIngredients,
     };
   }
 
   return {
-    userIngredients: requestUserIngredients,
-    extraIngredients: filterOutRequestIngredients(normalizedIngredients, request.ingredients),
+    userIngredients:
+      requestUserIngredients,
+
+    extraIngredients:
+      filterOutRequestIngredients(
+        normalizedIngredients,
+        request.ingredients,
+      ),
   };
 }
 
-/** Formats the original request ingredients for the "Your ingredients" column. */
-function normalizeRequestIngredients(ingredients: RecipeGenerationIngredient[]): string[] {
-  return ingredients.map((ingredient) => formatRichIngredientLine(ingredient)).filter(Boolean);
+/**
+ * Formats the original request ingredients
+ * for the "Your ingredients" column.
+ */
+function normalizeRequestIngredients(
+  ingredients: RecipeGenerationIngredient[],
+): string[] {
+  return ingredients
+    .map((ingredient) =>
+      formatRichIngredientLine(
+        ingredient,
+      ),
+    )
+    .filter(Boolean);
 }
 
-/** Splits ingredient objects by their declared source when the backend provides it. */
+/**
+ * Splits ingredient objects by their declared
+ * source when the backend provides it.
+ */
 function splitIngredientsBySource(
-  ingredients: Array<string | { name?: string; amount?: number; unit?: string; source?: string }>,
+  ingredients: Array<
+    | string
+    | {
+        name?: string;
+        amount?: number;
+        unit?: string;
+        source?: string;
+      }
+  >,
 ): IngredientCollections {
   return ingredients.reduce<IngredientCollections>(
     (collections, ingredient) => {
-      if (typeof ingredient === 'string') {
+      if (
+        typeof ingredient === 'string'
+      ) {
         return collections;
       }
 
-      const normalizedLine = formatRichIngredientLine(ingredient);
+      const normalizedLine =
+        formatRichIngredientLine(
+          ingredient,
+        );
 
       if (!normalizedLine) {
         return collections;
       }
 
-      if (ingredient.source === 'extra') {
-        collections.extraIngredients.push(normalizedLine);
+      if (
+        ingredient.source === 'extra'
+      ) {
+        collections.extraIngredients.push(
+          normalizedLine,
+        );
       } else {
-        collections.userIngredients.push(normalizedLine);
+        collections.userIngredients.push(
+          normalizedLine,
+        );
       }
 
       return collections;
     },
-    { userIngredients: [], extraIngredients: [] },
+    {
+      userIngredients: [],
+      extraIngredients: [],
+    },
   );
 }
 
-/** Removes request ingredients from the full recipe list so only added extras remain. */
+/**
+ * Removes request ingredients from the full
+ * recipe list so only added extras remain.
+ */
 function filterOutRequestIngredients(
   ingredients: string[],
-  requestIngredients: RecipeGenerationIngredient[],
+  requestIngredients:
+    RecipeGenerationIngredient[],
 ): string[] {
-  const requestIngredientNames = new Set(
-    requestIngredients.map((ingredient) => normalizeIngredientName(ingredient.name)),
-  );
+  const requestIngredientNames =
+    new Set(
+      requestIngredients.map(
+        (ingredient) =>
+          normalizeIngredientName(
+            ingredient.name,
+          ),
+      ),
+    );
 
   return ingredients.filter(
     (ingredient) =>
-      !requestIngredientNames.has(normalizeIngredientName(extractIngredientName(ingredient))),
+      !requestIngredientNames.has(
+        normalizeIngredientName(
+          extractIngredientName(
+            ingredient,
+          ),
+        ),
+      ),
   );
 }
 
-/** Extracts the probable ingredient name from a display line such as "200 g spinach". */
-function extractIngredientName(ingredientLine: string): string {
+/**
+ * Extracts the probable ingredient name from
+ * a display line such as "200 g spinach".
+ */
+function extractIngredientName(
+  ingredientLine: string,
+): string {
   return ingredientLine
     .replace(/^[\d.,/]+\s*/u, '')
     .replace(
@@ -554,97 +1093,426 @@ function extractIngredientName(ingredientLine: string): string {
     .trim();
 }
 
-/** Normalizes ingredient names for reliable comparison across request and response payloads. */
-function normalizeIngredientName(name: string): string {
-  return name.trim().toLowerCase();
-}
-
-/** Normalizes a mixed ingredient value into the app's line-based representation. */
-function normalizeIngredientLine(
-  ingredient: string | { name?: string; amount?: number; unit?: string; source?: string },
-): string {
-  return typeof ingredient === 'string' ? ingredient.trim() : formatRichIngredientLine(ingredient);
-}
-
-/** Normalizes a mixed step value into a single preparation line. */
-function normalizeStepLine(step: string | { title?: string; description?: string }): string {
-  if (typeof step === 'string') {
-    return step.trim();
-  }
-
-  const title = String(step.title ?? '').trim();
-  const description = String(step.description ?? '').trim();
-  return title && description ? `${title}: ${description}` : description || title;
-}
-
-/** Checks whether an ingredient includes a usable measured amount. */
-function hasMeasuredIngredient(ingredient: { amount?: number }): boolean {
-  return typeof ingredient.amount === 'number' && ingredient.amount > 0;
-}
-
-/** Formats a measured ingredient with amount, unit and name. */
-function formatMeasuredIngredient(
+/**
+ * Normalizes ingredient names for reliable
+ * comparison across request and response payloads.
+ */
+function normalizeIngredientName(
   name: string,
-  ingredient: { amount?: number; unit?: string },
 ): string {
-  return `${ingredient.amount} ${ingredient.unit ?? ''} ${name}`.trim();
+  return name
+    .trim()
+    .toLowerCase();
 }
 
-/** Preserves step metadata while keeping the existing string-based recipes backward compatible. */
-function buildStepDetails(recipe: {
-  steps?: Array<
+/**
+ * Normalizes a mixed ingredient value into
+ * the app's line-based representation.
+ */
+function normalizeIngredientLine(
+  ingredient:
+    | string
+    | {
+        name?: string;
+        amount?: number;
+        unit?: string;
+        source?: string;
+      },
+): string {
+  return typeof ingredient === 'string'
+    ? ingredient.trim()
+    : formatRichIngredientLine(
+        ingredient,
+      );
+}
+
+/**
+ * Normalizes a mixed step value into
+ * a single preparation line.
+ */
+function normalizeStepLine(
+  step:
     | string
     | {
         title?: string;
         description?: string;
-        assignedTo?: string[];
-        parallelizable?: boolean;
-        durationMinutes?: number;
-      }
-  >;
-  helperAssignments?: Array<{ person: string; stepIndexes: number[] }>;
-}): RecipePreparationStep[] {
-  return (recipe.steps ?? []).flatMap((step, index) => {
-    const description =
-      typeof step === 'string' ? step.trim() : String(step.description ?? step.title ?? '').trim();
-    if (!description) return [];
-    const rawStep = typeof step === 'string' ? null : step;
-    const helper =
-      rawStep?.assignedTo?.[0] ??
-      recipe.helperAssignments?.find((entry) => entry.stepIndexes.includes(index + 1))?.person;
-    const parsedCook = Number(helper?.match(/(\d+)$/)?.[1]);
-    const assignedCook =
-      Number.isInteger(parsedCook) && parsedCook >= 1 && parsedCook <= 3 ? parsedCook : 1;
-    const minutes = rawStep?.durationMinutes;
-    return [
-      {
-        title: rawStep?.title?.trim() || `Step ${index + 1}`,
-        description,
-        assignedCook,
-        parallelizable: rawStep?.parallelizable === true,
-        durationMinutes:
-          typeof minutes === 'number' && Number.isFinite(minutes) && minutes >= 0 ? minutes : null,
       },
-    ];
-  });
+): string {
+  if (typeof step === 'string') {
+    return step.trim();
+  }
+
+  const title = String(
+    step.title ?? '',
+  ).trim();
+
+  const description = String(
+    step.description ?? '',
+  ).trim();
+
+  return title && description
+    ? `${title}: ${description}`
+    : description || title;
 }
 
-/** Adapts Supabase Edge Function snake_case fields to the Angular recipe model. */
-function adaptEdgeRecipe(value: GeneratedRecipe): GeneratedRecipe {
-  const raw = value as unknown as Record<string, unknown>;
-  const minutes = Number(raw['cooking_time'] ?? raw['cookTimeMinutes'] ?? 20);
-  const steps = Array.isArray(raw['instructions']) ? raw['instructions'] : raw['steps'];
-  const rawNutrition = raw['nutrition'] as Record<string, unknown> | null;
-  const nutrition = rawNutrition && typeof rawNutrition === 'object' && ('perPortion' in rawNutrition || 'total' in rawNutrition)
-    ? rawNutrition as unknown as RecipeNutrition : null;
+/**
+ * Checks whether an ingredient includes
+ * a usable measured amount.
+ */
+function hasMeasuredIngredient(
+  ingredient: {
+    amount?: number;
+  },
+): boolean {
+  return (
+    typeof ingredient.amount === 'number' &&
+    ingredient.amount > 0
+  );
+}
+
+/**
+ * Formats a measured ingredient with
+ * amount, unit and name.
+ */
+function formatMeasuredIngredient(
+  name: string,
+  ingredient: {
+    amount?: number;
+    unit?: string;
+  },
+): string {
+  return `${ingredient.amount} ${ingredient.unit ?? ''} ${name}`.trim();
+}
+
+/**
+ * Preserves step metadata while keeping existing
+ * string-based recipes backward compatible.
+ */
+function buildStepDetails(
+  recipe: {
+    steps?: Array<
+      | string
+      | {
+          title?: string;
+          description?: string;
+          assignedTo?: string[];
+          parallelizable?: boolean;
+          durationMinutes?: number;
+        }
+    >;
+
+    helperAssignments?: Array<{
+      person: string;
+      stepIndexes: number[];
+    }>;
+  },
+): RecipePreparationStep[] {
+  return (recipe.steps ?? []).flatMap(
+    (step, index) => {
+      const description =
+        typeof step === 'string'
+          ? step.trim()
+          : String(
+              step.description ??
+                step.title ??
+                '',
+            ).trim();
+
+      if (!description) {
+        return [];
+      }
+
+      const rawStep =
+        typeof step === 'string'
+          ? null
+          : step;
+
+      const helper =
+        rawStep?.assignedTo?.[0] ??
+        recipe.helperAssignments?.find(
+          (entry) =>
+            entry.stepIndexes.includes(
+              index + 1,
+            ),
+        )?.person;
+
+      const parsedCook = Number(
+        helper?.match(/(\d+)$/)?.[1],
+      );
+
+      const assignedCook =
+        Number.isInteger(parsedCook) &&
+        parsedCook >= 1 &&
+        parsedCook <= 3
+          ? parsedCook
+          : 1;
+
+      const minutes =
+        rawStep?.durationMinutes;
+
+      return [
+        {
+          title:
+            rawStep?.title?.trim() ||
+            `Step ${index + 1}`,
+
+          description,
+
+          assignedCook,
+
+          parallelizable:
+            rawStep?.parallelizable ===
+            true,
+
+          durationMinutes:
+            typeof minutes === 'number' &&
+            Number.isFinite(minutes) &&
+            minutes >= 0
+              ? minutes
+              : null,
+        },
+      ];
+    },
+  );
+}
+
+/**
+ * Adapts Supabase Edge Function fields
+ * to the Angular recipe model.
+ */
+function adaptEdgeRecipe(
+  value: GeneratedRecipe,
+): GeneratedRecipe {
+  const raw =
+    value as unknown as Record<
+      string,
+      unknown
+    >;
+
+  const minutes = Number(
+    raw['cooking_time'] ??
+      raw['cookTimeMinutes'] ??
+      20,
+  );
+
+  const safeMinutes =
+    Number.isFinite(minutes) &&
+    minutes > 0
+      ? minutes
+      : 20;
+
+  const steps =
+    Array.isArray(
+      raw['instructions'],
+    )
+      ? raw['instructions']
+      : raw['steps'];
+
+  const servings = Math.max(
+    1,
+    Number(raw['servings'] ?? 1) ||
+      1,
+  );
+
+  const rawNutrition =
+    raw['nutrition'] &&
+    typeof raw['nutrition'] ===
+      'object'
+      ? (raw[
+          'nutrition'
+        ] as Record<string, unknown>)
+      : null;
+
+  const nutrition =
+    adaptEdgeNutrition(
+      rawNutrition,
+      servings,
+    );
+
   return {
     ...value,
-    prepTime: `${minutes} min`,
-    prepTimeMinutes: Number.isFinite(minutes) ? minutes : 20,
-    cookCount: Number(raw['helpers'] ?? 1),
-    cuisineSlug: mapCuisineToSlug(String(raw['cuisine'] ?? 'fusion')),
-    ingredients: Array.isArray(raw['ingredients']) ? raw['ingredients'] as string[] : [],
-    steps: Array.isArray(steps) ? steps as string[] : [],
+
+    prepTime:
+      `${safeMinutes} min`,
+
+    prepTimeMinutes:
+      safeMinutes,
+
+    cookCount: Math.max(
+      1,
+      Number(raw['helpers'] ?? 1) ||
+        1,
+    ),
+
+    cuisineSlug:
+      mapCuisineToSlug(
+        String(
+          raw['cuisine'] ??
+            'fusion',
+        ),
+      ),
+
+    ingredients:
+      Array.isArray(
+        raw['ingredients'],
+      )
+        ? (raw[
+            'ingredients'
+          ] as GeneratedRecipe['ingredients'])
+        : [],
+
+    steps:
+      Array.isArray(steps)
+        ? (steps as GeneratedRecipe['steps'])
+        : [],
+
     nutrition,
   };
+}
+
+/**
+ * Converts Edge Function nutrition values
+ * into the structure expected by the UI.
+ *
+ * The Edge Function currently returns:
+ * calories, protein, carbs and fat.
+ *
+ * The Angular UI expects:
+ * perPortion and total with *_g fields.
+ */
+function adaptEdgeNutrition(
+  rawNutrition:
+    | Record<string, unknown>
+    | null,
+  servings: number,
+): RecipeNutrition | null {
+  if (!rawNutrition) {
+    return null;
+  }
+
+  /*
+   * Keep already normalized nutrition data
+   * backward compatible.
+   */
+  if (
+    'perPortion' in rawNutrition ||
+    'total' in rawNutrition
+  ) {
+    return rawNutrition as unknown as RecipeNutrition;
+  }
+
+  const calories =
+    readNutritionNumber(
+      rawNutrition['calories'],
+    );
+
+  const protein =
+    readNutritionNumber(
+      rawNutrition['protein_g'] ??
+        rawNutrition['protein'],
+    );
+
+  const carbs =
+    readNutritionNumber(
+      rawNutrition['carbs_g'] ??
+        rawNutrition['carbs'],
+    );
+
+  const fat =
+    readNutritionNumber(
+      rawNutrition['fat_g'] ??
+        rawNutrition['fat'],
+    );
+
+  /*
+   * Do not invent nutrition values when
+   * the backend returned no usable data.
+   */
+  if (
+    calories === null &&
+    protein === null &&
+    carbs === null &&
+    fat === null
+  ) {
+    return null;
+  }
+
+  const perPortion = {
+    calories,
+    protein_g: protein,
+    carbs_g: carbs,
+    fat_g: fat,
+  };
+
+  return {
+    perPortion,
+
+    total: {
+      calories:
+        multiplyNutritionValue(
+          calories,
+          servings,
+        ),
+
+      protein_g:
+        multiplyNutritionValue(
+          protein,
+          servings,
+        ),
+
+      carbs_g:
+        multiplyNutritionValue(
+          carbs,
+          servings,
+        ),
+
+      fat_g:
+        multiplyNutritionValue(
+          fat,
+          servings,
+        ),
+    },
+  };
+}
+
+/**
+ * Converts an unknown nutrition value
+ * into a safe finite non-negative number.
+ */
+function readNutritionNumber(
+  value: unknown,
+): number | null {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ''
+  ) {
+    return null;
+  }
+
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) &&
+    parsed >= 0
+    ? parsed
+    : null;
+}
+
+/**
+ * Calculates the total nutrition value
+ * for all servings.
+ */
+function multiplyNutritionValue(
+  value: number | null,
+  servings: number,
+): number | null {
+  if (value === null) {
+    return null;
+  }
+
+  return (
+    Math.round(
+      value * servings * 10,
+    ) / 10
+  );
 }
