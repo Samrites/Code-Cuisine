@@ -1,13 +1,19 @@
 <header class="preparation-header">
   <div class="preparation-header-branding">
-    <a class="preparation-brand" routerLink="/" aria-label="Back to home page">
+    <a
+      class="preparation-brand"
+      routerLink="/"
+      aria-label="Back to home page"
+    >
       <object
         class="preparation-brand-media"
         data="Icons/Capa_green.svg?v=1"
         type="image/svg+xml"
         aria-label="Code-a-Cuisine"
       >
-        <span class="preparation-brand-fallback">Code a Cuisine</span>
+        <span class="preparation-brand-fallback">
+          Code a Cuisine
+        </span>
       </object>
     </a>
 
@@ -23,17 +29,31 @@
         alt=""
         aria-hidden="true"
       />
-      <span>{{ backLinkLabel }}</span>
+
+      <span>
+        {{ backLinkLabel }}
+      </span>
     </a>
   </div>
 </header>
 
-<main class="preparation-page" aria-label="Preparation page">
+<main
+  class="preparation-page"
+  aria-label="Preparation page"
+>
   @if (selectedRecipe(); as recipe) {
-    <section class="preparation-shell" aria-labelledby="preparation-title">
+    <section
+      class="preparation-shell"
+      aria-labelledby="preparation-title"
+    >
       <div class="preparation-content-frame">
+
+        <!-- Recipe header -->
         <div class="preparation-intro">
+
+          <!-- Recipe title / cooking information -->
           <div class="preparation-intro-main">
+
             <div class="preparation-meta">
               <div class="preparation-meta-item">
                 <img
@@ -43,21 +63,34 @@
                   alt=""
                   aria-hidden="true"
                 />
-                <span>Cooking time: {{ recipe.prepTime }}</span>
+
+                <span>
+                  Cooking time: {{ recipe.prepTime }}
+                </span>
               </div>
             </div>
 
-            <h1 class="preparation-title" id="preparation-title">
+            <h1
+              class="preparation-title"
+              id="preparation-title"
+            >
               {{ recipe.title }}
             </h1>
 
             <div class="preparation-chefs">
               <span class="preparation-chefs-label">
-                {{ cookingPersonsLabel() === 1 ? 'Cooking person' : 'Cooking persons' }}:
+                {{
+                  cookingPersonsLabel() === 1
+                    ? 'Cooking person'
+                    : 'Cooking persons'
+                }}:
                 {{ cookingPersonsLabel() }}
               </span>
 
-              @for (cookLabelSource of cookLabelSources(); track cookLabelSource) {
+              @for (
+                cookLabelSource of cookLabelSources();
+                track cookLabelSource
+              ) {
                 <img
                   class="preparation-cook-label"
                   [src]="cookLabelSource"
@@ -68,11 +101,18 @@
             </div>
           </div>
 
+          <!-- Tags / nutrition -->
           <div class="preparation-intro-side">
             <div class="preparation-intro-side-panel">
+
               <div class="preparation-tags">
-                @for (tag of selectedPreferenceTags(); track tag) {
-                  <span class="preparation-tag">{{ tag }}</span>
+                @for (
+                  tag of selectedPreferenceTags();
+                  track tag
+                ) {
+                  <span class="preparation-tag">
+                    {{ tag }}
+                  </span>
                 }
 
                 <span
@@ -85,6 +125,7 @@
                     height="20"
                     alt=""
                   />
+
                   {{ recipe.likes }}
                 </span>
               </div>
@@ -95,11 +136,15 @@
                 </h2>
 
                 <div class="preparation-nutrition-grid">
-                  @for (fact of nutritionFacts(); track fact.label) {
+                  @for (
+                    fact of nutritionFacts();
+                    track fact.label
+                  ) {
                     <div class="preparation-nutrition-item">
                       <span class="preparation-nutrition-label">
                         {{ fact.label }}
                       </span>
+
                       <span class="preparation-nutrition-value">
                         {{ fact.value }}
                       </span>
@@ -107,12 +152,17 @@
                   }
                 </div>
               </div>
+
             </div>
           </div>
         </div>
 
+        <!-- Ingredients hero -->
         <div
-          class="preparation-section-hero preparation-section-hero-ingredients"
+          class="
+            preparation-section-hero
+            preparation-section-hero-ingredients
+          "
           aria-hidden="true"
         >
           <img
@@ -132,19 +182,28 @@
           />
         </div>
 
+        <!-- Ingredients -->
         <section
           class="preparation-ingredients-section"
           aria-labelledby="ingredients-title"
         >
           <h2
-            class="preparation-card-title preparation-card-title-sr-only"
+            class="
+              preparation-card-title
+              preparation-card-title-sr-only
+            "
             id="ingredients-title"
           >
             Ingredients
           </h2>
 
-          @if (!isMobileLayout() || !ingredientsCollapsed()) {
+          @if (
+            !isMobileLayout() ||
+            !ingredientsCollapsed()
+          ) {
             <div class="preparation-ingredients-grid">
+
+              <!-- Your ingredients -->
               <section
                 class="preparation-ingredients-column"
                 aria-labelledby="your-ingredients-title"
@@ -157,7 +216,11 @@
                 </h3>
 
                 <ul class="preparation-ingredients-list">
-                  @for (ingredient of ingredientColumns().yourIngredients; track ingredient) {
+                  @for (
+                    ingredient of
+                      ingredientColumns().yourIngredients;
+                    track ingredient
+                  ) {
                     <li class="preparation-ingredients-item">
                       {{ ingredient }}
                     </li>
@@ -165,6 +228,7 @@
                 </ul>
               </section>
 
+              <!-- Extra ingredients -->
               <section
                 class="preparation-ingredients-column"
                 aria-labelledby="extra-ingredients-title"
@@ -177,16 +241,22 @@
                 </h3>
 
                 <ul class="preparation-ingredients-list">
-                  @for (ingredient of ingredientColumns().extraIngredients; track ingredient) {
+                  @for (
+                    ingredient of
+                      ingredientColumns().extraIngredients;
+                    track ingredient
+                  ) {
                     <li class="preparation-ingredients-item">
                       {{ ingredient }}
                     </li>
                   }
                 </ul>
               </section>
+
             </div>
           }
 
+          <!-- Mobile ingredients toggle -->
           @if (isMobileLayout()) {
             <button
               type="button"
@@ -197,7 +267,11 @@
               (click)="toggleIngredients()"
             >
               <span>
-                {{ ingredientsCollapsed() ? 'Show ingredients' : 'Hide ingredients' }}
+                {{
+                  ingredientsCollapsed()
+                    ? 'Show ingredients'
+                    : 'Hide ingredients'
+                }}
               </span>
 
               <img
@@ -211,8 +285,12 @@
           }
         </section>
 
+        <!-- Directions hero -->
         <div
-          class="preparation-section-hero preparation-section-hero-directions"
+          class="
+            preparation-section-hero
+            preparation-section-hero-directions
+          "
           aria-hidden="true"
         >
           <img
@@ -232,22 +310,34 @@
           />
         </div>
 
+        <!-- Directions -->
         <section
           class="preparation-directions-section"
           aria-labelledby="steps-title"
         >
           <h2
-            class="preparation-card-title preparation-card-title-sr-only"
+            class="
+              preparation-card-title
+              preparation-card-title-sr-only
+            "
             id="steps-title"
           >
             Directions
           </h2>
 
-          @if (!isMobileLayout() || !directionsCollapsed()) {
+          @if (
+            !isMobileLayout() ||
+            !directionsCollapsed()
+          ) {
             <div class="preparation-directions-grid">
-              @for (direction of preparationDirections(); track direction.number) {
+              @for (
+                direction of preparationDirections();
+                track direction.number
+              ) {
                 <article class="preparation-direction-item">
+
                   <div class="preparation-direction-title-row">
+
                     <span class="preparation-direction-number">
                       {{ direction.number }}.
                     </span>
@@ -274,16 +364,20 @@
                     </p>
                   }
 
-                  @if (direction.durationMinutes !== null) {
+                  @if (
+                    direction.durationMinutes !== null
+                  ) {
                     <p class="preparation-step-note">
                       {{ direction.durationMinutes }} min
                     </p>
                   }
+
                 </article>
               }
             </div>
           }
 
+          <!-- Mobile directions toggle -->
           @if (isMobileLayout()) {
             <button
               type="button"
@@ -294,7 +388,11 @@
               (click)="toggleDirections()"
             >
               <span>
-                {{ directionsCollapsed() ? 'Show directions' : 'Hide directions' }}
+                {{
+                  directionsCollapsed()
+                    ? 'Show directions'
+                    : 'Hide directions'
+                }}
               </span>
 
               <img
@@ -308,11 +406,13 @@
           }
         </section>
 
+        <!-- Recipe feedback -->
         <section
           class="preparation-like-section"
           aria-label="Recipe feedback"
         >
           <div class="preparation-like-copy">
+
             <p class="preparation-like-title">
               Just finished this meal?
             </p>
@@ -320,6 +420,7 @@
             <p class="preparation-like-text">
               Give it a heart, so that the others know this is delicious.
             </p>
+
           </div>
 
           <button
@@ -355,8 +456,10 @@
             }
           </button>
         </section>
+
       </div>
 
+      <!-- Cookbook footer -->
       <section
         class="preparation-footer-frame"
         aria-label="Preparation footer area"
@@ -373,117 +476,13 @@
         </a>
       </section>
 
-      <details class="preparation-more-details">
-        <summary>
-          Nutrition details and cooking tasks
-        </summary>
-
-        <div>
-          <details class="preparation-nutrition-details">
-            <summary>
-              Nutrition per portion and total
-            </summary>
-
-            <table>
-              <caption>
-                Macro nutrients in grams; percentages show their share of macro calories.
-              </caption>
-
-              <thead>
-                <tr>
-                  <th scope="col">Nutrient</th>
-                  <th scope="col">Per portion</th>
-                  <th scope="col">Total</th>
-                  <th scope="col">Share</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                <tr>
-                  <th scope="row">Energy</th>
-                  <td>
-                    {{ recipe.nutrition?.perPortion?.calories ?? '—' }} kcal
-                  </td>
-                  <td>
-                    {{ recipe.nutrition?.total?.calories ?? '—' }} kcal
-                  </td>
-                  <td>—</td>
-                </tr>
-
-                @for (macro of macroNutrition(); track macro.label) {
-                  <tr>
-                    <th scope="row">
-                      {{ macro.label }}
-                    </th>
-                    <td>{{ macro.portion }}</td>
-                    <td>{{ macro.total }}</td>
-                    <td>
-                      {{ macro.percent === null ? '—' : macro.percent + '%' }}
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-
-            @for (macro of macroNutrition(); track macro.label) {
-              @if (macro.percent !== null) {
-                <label class="preparation-macro-bar">
-                  {{ macro.label }} {{ macro.percent }}%
-                  <meter
-                    min="0"
-                    max="100"
-                    [value]="macro.percent"
-                  >
-                    {{ macro.percent }}%
-                  </meter>
-                </label>
-              }
-            }
-          </details>
-
-          @if (cookingPersonsLabel() > 1) {
-            <details class="preparation-helper-tasks">
-              <summary>
-                Tasks for each cook
-              </summary>
-
-              <div class="preparation-helper-grid">
-                @for (helper of helperTasks(); track helper.cook) {
-                  <section
-                    [attr.aria-label]="'Tasks for cook ' + helper.cook"
-                  >
-                    <img
-                      [src]="helper.label"
-                      [alt]="'Chef ' + helper.cook"
-                    />
-
-                    <ol>
-                      @for (task of helper.tasks; track task.number) {
-                        <li>
-                          <label>
-                            <input type="checkbox" />
-                            {{ task.number }}. {{ task.title }}
-                          </label>
-                        </li>
-                      } @empty {
-                        <li>
-                          No assigned tasks in this recipe.
-                        </li>
-                      }
-                    </ol>
-                  </section>
-                }
-              </div>
-            </details>
-          }
-        </div>
-      </details>
-
+      <!-- Generate another recipe -->
       <a
         class="preparation-generate-link"
         routerLink="/generate-recipe"
       >
         Generate new recipe
+
         <img
           src="Icons/arrow-11.svg"
           width="34"
@@ -491,11 +490,17 @@
           alt=""
         />
       </a>
+
     </section>
   } @else {
+
+    <!-- Empty state -->
     <section class="preparation-shell">
       <section
-        class="preparation-card preparation-card-empty"
+        class="
+          preparation-card
+          preparation-card-empty
+        "
         aria-live="polite"
       >
         <h1 class="preparation-card-title">
@@ -503,7 +508,8 @@
         </h1>
 
         <p class="preparation-description">
-          Choose one of the recipe cards on the results page to open the preparation view.
+          Choose one of the recipe cards on the results page
+          to open the preparation view.
         </p>
 
         <a
@@ -514,5 +520,6 @@
         </a>
       </section>
     </section>
+
   }
 </main>
