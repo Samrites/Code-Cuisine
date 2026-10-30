@@ -22,77 +22,77 @@ type CookbookCategoryConfig = {
 
 const PAGE_SIZE = 20;
 
-const DEFAULT_CATEGORY = {
+const DEFAULT_CATEGORY: CookbookCategoryConfig = {
   slug: 'italian',
   title: 'Italian cuisine',
-  heroSrc: 'Icons/property-italian.svg',
-  mobileHeroSrc: 'Icons/property-italian-mobile.svg',
-  heroWidth: 1146,
-  heroHeight: 144,
-  mobileHeroWidth: 340,
-  mobileHeroHeight: 94,
-} satisfies CookbookCategoryConfig;
+  heroSrc: 'Icons/Italian cuisine rece.png',
+  mobileHeroSrc: 'Icons/Italian cuisine rece.png',
+  heroWidth: 900,
+  heroHeight: 1102,
+  mobileHeroWidth: 900,
+  mobileHeroHeight: 1102,
+};
 
 const COOKBOOK_CATEGORY_CONFIGS: CookbookCategoryConfig[] = [
   {
     slug: 'italian',
     title: 'Italian cuisine',
-    heroSrc: 'Icons/property-italian.svg',
-    mobileHeroSrc: 'Icons/property-italian-mobile.svg',
-    heroWidth: 1146,
-    heroHeight: 144,
-    mobileHeroWidth: 340,
-    mobileHeroHeight: 94,
+    heroSrc: 'Icons/Italian cuisine rece.png',
+    mobileHeroSrc: 'Icons/Italian cuisine rece.png',
+    heroWidth: 900,
+    heroHeight: 1102,
+    mobileHeroWidth: 900,
+    mobileHeroHeight: 1102,
   },
   {
     slug: 'german',
     title: 'German cuisine',
-    heroSrc: 'Icons/property-german.svg',
-    mobileHeroSrc: 'Icons/property-german-mobile.svg',
-    heroWidth: 1143,
-    heroHeight: 151,
-    mobileHeroWidth: 341,
-    mobileHeroHeight: 91,
+    heroSrc: 'Icons/German cuisine rece.png',
+    mobileHeroSrc: 'Icons/German cuisine rece.png',
+    heroWidth: 900,
+    heroHeight: 1102,
+    mobileHeroWidth: 900,
+    mobileHeroHeight: 1102,
   },
   {
     slug: 'japanese',
     title: 'Japanese cuisine',
-    heroSrc: 'Icons/property-japanese.svg',
-    mobileHeroSrc: 'Icons/property-japanese-mobile.svg',
-    heroWidth: 1143,
-    heroHeight: 156,
-    mobileHeroWidth: 340,
-    mobileHeroHeight: 90,
-  },
-  {
-    slug: 'gourmet',
-    title: 'Gourmet cuisine',
-    heroSrc: 'Icons/property-gourmet.svg',
-    mobileHeroSrc: 'Icons/property-gourmet-mobile.svg',
-    heroWidth: 1143,
-    heroHeight: 165,
-    mobileHeroWidth: 342,
-    mobileHeroHeight: 90,
+    heroSrc: 'Icons/Japanese cuisine rece.png',
+    mobileHeroSrc: 'Icons/Japanese cuisine rece.png',
+    heroWidth: 900,
+    heroHeight: 1102,
+    mobileHeroWidth: 900,
+    mobileHeroHeight: 1102,
   },
   {
     slug: 'indian',
     title: 'Indian cuisine',
-    heroSrc: 'Icons/property-indian.svg',
-    mobileHeroSrc: 'Icons/property-indian-mobile.svg',
-    heroWidth: 1143,
-    heroHeight: 132,
-    mobileHeroWidth: 340,
-    mobileHeroHeight: 91,
+    heroSrc: 'Icons/Indian cuisine rece.png',
+    mobileHeroSrc: 'Icons/Indian cuisine rece.png',
+    heroWidth: 900,
+    heroHeight: 1102,
+    mobileHeroWidth: 900,
+    mobileHeroHeight: 1102,
+  },
+  {
+    slug: 'gourmet',
+    title: 'Gourmet cuisine',
+    heroSrc: 'Icons/Gourmet cuisine rece.png',
+    mobileHeroSrc: 'Icons/Gourmet cuisine rece.png',
+    heroWidth: 900,
+    heroHeight: 1102,
+    mobileHeroWidth: 900,
+    mobileHeroHeight: 1102,
   },
   {
     slug: 'fusion',
     title: 'Fusion cuisine',
-    heroSrc: 'Icons/property-fusion.svg',
-    mobileHeroSrc: 'Icons/property-fusion-mobile.svg',
-    heroWidth: 1143,
-    heroHeight: 132,
-    mobileHeroWidth: 340,
-    mobileHeroHeight: 91,
+    heroSrc: 'Icons/Fusion cuisine rece.png',
+    mobileHeroSrc: 'Icons/Fusion cuisine rece.png',
+    heroWidth: 900,
+    heroHeight: 1102,
+    mobileHeroWidth: 900,
+    mobileHeroHeight: 1102,
   },
 ];
 
@@ -180,12 +180,10 @@ export class CookbookCategoryPageComponent {
     ),
   );
 
-  /** Retries loading the cookbook after a failed request. */
   protected reloadRecipes(): void {
     void this.cookbookStore.refreshRecipes();
   }
 
-  /** Resolves the visible meta tags shown on each category-row card. */
   protected recipeMetaTags(
     recipe: StoredCookbookRecipe,
   ): string[] {
@@ -202,7 +200,6 @@ export class CookbookCategoryPageComponent {
     return tags;
   }
 
-  /** Opens the selected cookbook recipe in the preparation view. */
   protected openRecipe(
     recipe: GeneratedRecipe,
   ): void {
@@ -215,7 +212,6 @@ export class CookbookCategoryPageComponent {
     });
   }
 
-  /** Converts the recipe index on the current page into the absolute list position. */
   protected recipeNumber(
     indexOnPage: number,
   ): number {
@@ -227,7 +223,6 @@ export class CookbookCategoryPageComponent {
     );
   }
 
-  /** Updates the active category-page query parameter for pagination. */
   protected changePage(page: number): void {
     if (
       page < 1 ||
@@ -247,7 +242,6 @@ export class CookbookCategoryPageComponent {
   }
 }
 
-/** Maps a compact preparation-time label to the display category badges. */
 function getCookingTimeCategory(
   prepTime: string,
 ): 'Quick' | 'Medium' | 'Complex' {
