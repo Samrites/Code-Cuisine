@@ -144,10 +144,8 @@ export class CookbookStoreService {
           title: recipe.title,
           description: recipe.description,
 
-          cuisine: resolveCuisineSlug(
-            recipe,
-            preferences,
-          ),
+          // Use the cuisine selected in Preferences first.
+          cuisine: resolveCuisineSlug(recipe, preferences),
 
           cooking_time:
             recipe.prepTimeMinutes ??
@@ -161,23 +159,8 @@ export class CookbookStoreService {
             preferences?.persons ??
             1,
 
-          /**
-           * Keep the ingredient source information inside
-           * the existing Supabase JSON ingredients column.
-           *
-           * This allows the cookbook to restore the
-           * "Your ingredients" and "Extra ingredients"
-           * sections after a page reload.
-           */
           ingredients: buildStoredIngredients(recipe),
 
-          /**
-           * Keep the complete preparation metadata inside
-           * the existing Supabase JSON instructions column.
-           *
-           * This preserves Chef 1 / Chef 2 / Chef 3,
-           * parallel information and duration.
-           */
           instructions: buildStoredInstructions(recipe),
 
           nutrition:
@@ -235,9 +218,6 @@ export class CookbookStoreService {
 
 /**
  * Builds the ingredient JSON stored in Supabase.
- *
- * New recipes keep their source metadata so the
- * preparation page can restore both ingredient groups.
  */
 function buildStoredIngredients(
   recipe: GeneratedRecipe,
@@ -278,9 +258,6 @@ function buildStoredIngredients(
 
 /**
  * Builds the instruction JSON stored in Supabase.
- *
- * Structured step details are preferred because they
- * preserve cook assignments and preparation metadata.
  */
 function buildStoredInstructions(
   recipe: GeneratedRecipe,
@@ -309,22 +286,24 @@ function buildStoredInstructions(
 
 /**
  * Resolves the cuisine used by cookbook category pages.
+ *
+ * The cuisine selected in Preferences has priority.
  */
 function resolveCuisineSlug(
   recipe: GeneratedRecipe,
   preferences: RecipeGenerationPreferences | null,
 ): string {
-  const recipeCuisine =
-    normalizeCuisineSlug(recipe.cuisineSlug);
-
-  if (recipeCuisine) {
-    return recipeCuisine;
-  }
-
   const preferenceCuisine =
     normalizeCuisineSlug(preferences?.cuisine);
 
-  return preferenceCuisine || 'fusion';
+  if (preferenceCuisine) {
+    return preferenceCuisine;
+  }
+
+  const recipeCuisine =
+    normalizeCuisineSlug(recipe.cuisineSlug);
+
+  return recipeCuisine || 'fusion';
 }
 
 /**

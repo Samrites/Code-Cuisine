@@ -5,7 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build && node scripts/copy-htaccess.cjs",
-    "build:ftp": "ng build --base-href /angular-projects/code-cuisine/",
+    "build:ftp": "ng build --base-href /angular-projects/browser/",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test:regressions": "node scripts/check-regressions.cjs"

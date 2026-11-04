@@ -12,12 +12,6 @@ import { RecipeGenerationService } from '../../services/recipe-generation.servic
 type CookbookCategoryConfig = {
   slug: string;
   title: string;
-  heroSrc: string;
-  mobileHeroSrc: string;
-  heroWidth: number;
-  heroHeight: number;
-  mobileHeroWidth: number;
-  mobileHeroHeight: number;
 };
 
 const PAGE_SIZE = 20;
@@ -25,74 +19,32 @@ const PAGE_SIZE = 20;
 const DEFAULT_CATEGORY: CookbookCategoryConfig = {
   slug: 'italian',
   title: 'Italian cuisine',
-  heroSrc: 'Icons/Italian cuisine rece.png',
-  mobileHeroSrc: 'Icons/Italian cuisine rece.png',
-  heroWidth: 900,
-  heroHeight: 1102,
-  mobileHeroWidth: 900,
-  mobileHeroHeight: 1102,
 };
 
 const COOKBOOK_CATEGORY_CONFIGS: CookbookCategoryConfig[] = [
   {
     slug: 'italian',
     title: 'Italian cuisine',
-    heroSrc: 'Icons/Italian cuisine rece.png',
-    mobileHeroSrc: 'Icons/Italian cuisine rece.png',
-    heroWidth: 900,
-    heroHeight: 1102,
-    mobileHeroWidth: 900,
-    mobileHeroHeight: 1102,
   },
   {
     slug: 'german',
     title: 'German cuisine',
-    heroSrc: 'Icons/German cuisine rece.png',
-    mobileHeroSrc: 'Icons/German cuisine rece.png',
-    heroWidth: 900,
-    heroHeight: 1102,
-    mobileHeroWidth: 900,
-    mobileHeroHeight: 1102,
   },
   {
     slug: 'japanese',
     title: 'Japanese cuisine',
-    heroSrc: 'Icons/Japanese cuisine rece.png',
-    mobileHeroSrc: 'Icons/Japanese cuisine rece.png',
-    heroWidth: 900,
-    heroHeight: 1102,
-    mobileHeroWidth: 900,
-    mobileHeroHeight: 1102,
   },
   {
     slug: 'indian',
     title: 'Indian cuisine',
-    heroSrc: 'Icons/Indian cuisine rece.png',
-    mobileHeroSrc: 'Icons/Indian cuisine rece.png',
-    heroWidth: 900,
-    heroHeight: 1102,
-    mobileHeroWidth: 900,
-    mobileHeroHeight: 1102,
   },
   {
     slug: 'gourmet',
     title: 'Gourmet cuisine',
-    heroSrc: 'Icons/Gourmet cuisine rece.png',
-    mobileHeroSrc: 'Icons/Gourmet cuisine rece.png',
-    heroWidth: 900,
-    heroHeight: 1102,
-    mobileHeroWidth: 900,
-    mobileHeroHeight: 1102,
   },
   {
     slug: 'fusion',
     title: 'Fusion cuisine',
-    heroSrc: 'Icons/Fusion cuisine rece.png',
-    mobileHeroSrc: 'Icons/Fusion cuisine rece.png',
-    heroWidth: 900,
-    heroHeight: 1102,
-    mobileHeroWidth: 900,
-    mobileHeroHeight: 1102,
   },
 ];
 
@@ -126,12 +78,19 @@ export class CookbookCategoryPageComponent {
       (entry) => entry.slug === slug,
     );
 
-    return (
-      matchingCategory ??
-      COOKBOOK_CATEGORY_CONFIGS[0] ??
-      DEFAULT_CATEGORY
-    );
+    return matchingCategory ?? DEFAULT_CATEGORY;
   });
+
+  private readonly categoryRecipes = computed(() =>
+    this.cookbookStore.recipesByCuisine(this.category().slug),
+  );
+
+  protected readonly totalPages = computed(() =>
+    Math.max(
+      1,
+      Math.ceil(this.categoryRecipes().length / PAGE_SIZE),
+    ),
+  );
 
   protected readonly currentPage = computed(() => {
     const rawPage = Number(
@@ -148,24 +107,8 @@ export class CookbookCategoryPageComponent {
     );
   });
 
-  private readonly categoryRecipes = computed(() =>
-    this.cookbookStore.recipesByCuisine(
-      this.category().slug,
-    ),
-  );
-
-  protected readonly totalPages = computed(() =>
-    Math.max(
-      1,
-      Math.ceil(
-        this.categoryRecipes().length / PAGE_SIZE,
-      ),
-    ),
-  );
-
   protected readonly visibleRecipes = computed(() => {
-    const start =
-      (this.currentPage() - 1) * PAGE_SIZE;
+    const start = (this.currentPage() - 1) * PAGE_SIZE;
 
     return this.categoryRecipes().slice(
       start,
@@ -193,16 +136,12 @@ export class CookbookCategoryPageComponent {
       tags.push(recipe.dietTag);
     }
 
-    tags.push(
-      getCookingTimeCategory(recipe.prepTime),
-    );
+    tags.push(getCookingTimeCategory(recipe.prepTime));
 
     return tags;
   }
 
-  protected openRecipe(
-    recipe: GeneratedRecipe,
-  ): void {
+  protected openRecipe(recipe: GeneratedRecipe): void {
     this.recipeGeneration.selectRecipe(recipe);
 
     void this.router.navigate(['/preparation'], {
@@ -212,12 +151,9 @@ export class CookbookCategoryPageComponent {
     });
   }
 
-  protected recipeNumber(
-    indexOnPage: number,
-  ): number {
+  protected recipeNumber(indexOnPage: number): number {
     return (
-      (this.currentPage() - 1) *
-        PAGE_SIZE +
+      (this.currentPage() - 1) * PAGE_SIZE +
       indexOnPage +
       1
     );
@@ -250,10 +186,7 @@ function getCookingTimeCategory(
     10,
   );
 
-  if (
-    Number.isNaN(minutes) ||
-    minutes <= 20
-  ) {
+  if (Number.isNaN(minutes) || minutes <= 20) {
     return 'Quick';
   }
 
