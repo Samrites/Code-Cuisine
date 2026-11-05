@@ -115,18 +115,27 @@
                   </span>
                 }
 
+                <!-- Like-Anzeige oben -->
                 <span
                   class="preparation-tag preparation-like-tag"
-                  [attr.aria-label]="recipe.likes + ' likes'"
+                  [class.is-active]="isLiked()"
+                  [attr.aria-label]="
+                    ((recipe.likes ?? 0) + (isLiked() ? 1 : 0)) + ' likes'
+                  "
                 >
                   <img
-                    src="Icons/favorite.svg"
+                    [src]="
+                      isLiked()
+                        ? 'Icons/property-clicked.svg'
+                        : 'Icons/favorite.svg'
+                    "
                     width="20"
                     height="20"
                     alt=""
+                    aria-hidden="true"
                   />
 
-                  {{ recipe.likes }}
+                  {{ (recipe.likes ?? 0) + (isLiked() ? 1 : 0) }}
                 </span>
               </div>
 
