@@ -5,6 +5,7 @@ import type {
   RecipeGenerationPreferences,
   StoredCookbookRecipe,
 } from '../models/recipe.model';
+
 import { getSupabaseConfig } from '../config/supabase.config';
 import { normalizeStoredRecipe } from './recipe-storage.utils';
 
@@ -27,7 +28,9 @@ export class CookbookStoreService {
   >('idle');
 
   readonly recipes = computed(() => this.recipesState());
+
   readonly loadStatus = this.loadStatusState.asReadonly();
+
   readonly saveStatus = this.saveStatusState.asReadonly();
 
   readonly topLikedRecipes = computed(() =>
@@ -41,7 +44,7 @@ export class CookbookStoreService {
   }
 
   /**
-   * Returns all stored recipes that belong to the selected cuisine.
+   * Returns recipes belonging to the selected cuisine.
    */
   recipesByCuisine(slug: string): StoredCookbookRecipe[] {
     const normalizedSlug = normalizeCuisineSlug(slug);
@@ -100,6 +103,8 @@ export class CookbookStoreService {
             instructions: row['instructions'],
 
             cookCount: row['helpers'],
+
+            likes: row['likes'] ?? 0,
           }),
         )
         .filter(
@@ -110,10 +115,7 @@ export class CookbookStoreService {
       this.recipesState.set(saved);
       this.loadStatusState.set('ready');
     } catch (error) {
-      console.error(
-        'Supabase cookbook read failed',
-        error,
-      );
+      console.error('Supabase cookbook read failed', error);
 
       this.recipesState.set([]);
       this.loadStatusState.set('error');
@@ -121,8 +123,7 @@ export class CookbookStoreService {
   }
 
   /**
-   * Saves newly generated recipes in Supabase
-   * and refreshes the cookbook afterwards.
+   * Saves newly generated recipes in Supabase.
    */
   async saveGeneratedRecipes(
     recipes: GeneratedRecipe[],
@@ -142,17 +143,16 @@ export class CookbookStoreService {
         .filter((recipe) => recipe.source !== 'library')
         .map((recipe) => ({
           title: recipe.title,
+
           description: recipe.description,
 
-          // Use the cuisine selected in Preferences first.
           cuisine: resolveCuisineSlug(recipe, preferences),
 
           cooking_time:
             recipe.prepTimeMinutes ??
             parsePreparationMinutes(recipe.prepTime),
 
-          servings:
-            preferences?.portions ?? 2,
+          servings: preferences?.portions ?? 2,
 
           helpers:
             recipe.cookCount ??
@@ -163,8 +163,9 @@ export class CookbookStoreService {
 
           instructions: buildStoredInstructions(recipe),
 
-          nutrition:
-            recipe.nutrition ?? null,
+          nutrition: recipe.nutrition ?? null,
+
+          likes: 0,
         }));
 
       if (payload.length > 0) {
@@ -192,10 +193,7 @@ export class CookbookStoreService {
 
       await this.refreshRecipes();
     } catch (error) {
-      console.error(
-        'Supabase cookbook save failed',
-        error,
-      );
+      console.error('Supabase cookbook save failed', error);
 
       this.saveStatusState.set('error');
 
@@ -204,20 +202,83 @@ export class CookbookStoreService {
   }
 
   /**
-   * Likes stay disabled until a secure Supabase RPC is available.
+   * Saves a like permanently in Supabase.
+   *
+   * Uses the SQL function:
+   * public.like_recipe(recipe_id bigint)
    */
-  async likeRecipe(
-    recipe: GeneratedRecipe,
-  ): Promise<void> {
-    console.info(
-      'Likes are disabled until a secure Supabase RPC is configured.',
-      recipe.id,
-    );
+  async likeRecipe(recipe: GeneratedRecipe): Promise<void> {
+    const config = getSupabaseConfig();
+
+    if (!config) {
+      console.error('Supabase is not configured.');
+      return;
+    }
+
+    const recipeId = Number(recipe.id);
+
+    if (!Number.isSafeInteger(recipeId) || recipeId <= 0) {
+      console.error(
+        'Cannot save like: invalid database recipe ID.',
+        recipe.id,
+      );
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${config.url}/rest/v1/rpc/like_recipe`,
+        {
+          method: 'POST',
+          headers: {
+            apikey: config.anonKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            recipe_id: recipeId,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+
+        throw new Error(
+          `Supabase like failed (${response.status}): ${errorText}`,
+        );
+      }
+
+      const newLikes = (await response.json()) as number | null;
+
+      if (newLikes === null) {
+        throw new Error(
+          `Recipe ${recipeId} was not found in Supabase.`,
+        );
+      }
+
+      // Update the displayed like count immediately.
+      this.recipesState.update((recipes) =>
+        recipes.map((storedRecipe) =>
+          String(storedRecipe.id) === String(recipeId)
+            ? {
+                ...storedRecipe,
+                likes: newLikes,
+              }
+            : storedRecipe,
+        ),
+      );
+
+      // Reload all recipes to keep cookbook pages synchronized.
+      await this.refreshRecipes();
+    } catch (error) {
+      console.error('Could not save recipe like:', error);
+      throw error;
+    }
   }
 }
 
 /**
- * Builds the ingredient JSON stored in Supabase.
+ * Builds ingredient data for Supabase.
  */
 function buildStoredIngredients(
   recipe: GeneratedRecipe,
@@ -257,7 +318,7 @@ function buildStoredIngredients(
 }
 
 /**
- * Builds the instruction JSON stored in Supabase.
+ * Builds instruction data for Supabase.
  */
 function buildStoredInstructions(
   recipe: GeneratedRecipe,
@@ -285,9 +346,7 @@ function buildStoredInstructions(
 }
 
 /**
- * Resolves the cuisine used by cookbook category pages.
- *
- * The cuisine selected in Preferences has priority.
+ * Resolves the cuisine category.
  */
 function resolveCuisineSlug(
   recipe: GeneratedRecipe,
@@ -307,8 +366,7 @@ function resolveCuisineSlug(
 }
 
 /**
- * Normalizes all supported cuisine labels and aliases
- * into the slugs used by cookbook category routes.
+ * Normalizes cuisine names.
  */
 function normalizeCuisineSlug(
   value: string | null | undefined,
@@ -337,29 +395,17 @@ function normalizeCuisineSlug(
 }
 
 /**
- * Safely reads string database values.
+ * Safely reads string values.
  */
-function readString(
-  value: unknown,
-): string {
-  return typeof value === 'string'
-    ? value
-    : '';
+function readString(value: unknown): string {
+  return typeof value === 'string' ? value : '';
 }
 
 /**
- * Reads preparation minutes from labels such as
- * "20 min" when no numeric value is available.
+ * Reads preparation time in minutes.
  */
-function parsePreparationMinutes(
-  prepTime: string,
-): number {
-  const minutes = Number.parseInt(
-    prepTime,
-    10,
-  );
+function parsePreparationMinutes(prepTime: string): number {
+  const minutes = Number.parseInt(prepTime, 10);
 
-  return Number.isFinite(minutes)
-    ? minutes
-    : 0;
+  return Number.isFinite(minutes) ? minutes : 0;
 }

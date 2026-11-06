@@ -1,8 +1,21 @@
-import { Component, computed, DestroyRef, effect, inject, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
+
 import { ActivatedRoute, RouterLink } from '@angular/router';
+
 import { RecipeGenerationService } from '../../services/recipe-generation.service';
 import { CookbookStoreService } from '../../services/cookbook-store.service';
-import { GeneratedRecipe, type RecipeNutrition } from '../../models/recipe.model';
+
+import {
+  GeneratedRecipe,
+  type RecipeNutrition,
+} from '../../models/recipe.model';
 
 const AVAILABLE_COOK_LABELS = [
   'Icons/Cook-label.svg',
@@ -11,6 +24,12 @@ const AVAILABLE_COOK_LABELS = [
   'Icons/Cook-label4.svg',
 ];
 
+/**
+ * Browser storage key for the selected recipe.
+ */
+const SELECTED_RECIPE_STORAGE_KEY =
+  'code-cuisine:selected-preparation-recipe';
+
 @Component({
   selector: 'app-preparation-page',
   imports: [RouterLink],
@@ -18,29 +37,73 @@ const AVAILABLE_COOK_LABELS = [
   styleUrl: './preparation-page.scss',
 })
 export class PreparationPageComponent {
-  private readonly recipeGeneration = inject(RecipeGenerationService);
-  private readonly cookbookStore = inject(CookbookStoreService);
-  private readonly route = inject(ActivatedRoute);
-  private readonly destroyRef = inject(DestroyRef);
-  private readonly source = this.route.snapshot.queryParamMap.get('from');
+  private readonly recipeGeneration = inject(
+    RecipeGenerationService,
+  );
 
-  /** Tracks whether the current recipe has been liked locally by this browser. */
+  private readonly cookbookStore = inject(
+    CookbookStoreService,
+  );
+
+  private readonly route = inject(ActivatedRoute);
+
+  private readonly destroyRef = inject(DestroyRef);
+
+  private readonly source =
+    this.route.snapshot.queryParamMap.get('from');
+
+  /**
+   * Restores the last opened recipe after a page reload.
+   */
+  private readonly restoredRecipe = signal<GeneratedRecipe | null>(
+    this.loadStoredRecipe(),
+  );
+
+  /**
+   * Tracks whether the current recipe was liked in this browser.
+   */
   protected readonly isLiked = signal(false);
 
-  /** Stores the mobile accordion state for the ingredient section. */
+  /**
+   * Prevents repeated like clicks while saving.
+   */
+  protected readonly isSavingLike = signal(false);
+
+  /**
+   * Mobile accordion states.
+   */
   protected readonly ingredientsCollapsed = signal(false);
 
-  /** Stores the mobile accordion state for the directions section. */
   protected readonly directionsCollapsed = signal(false);
 
-  /** Mirrors the active responsive breakpoint used by the preparation layout. */
+  /**
+   * Responsive layout state.
+   */
   protected readonly isMobileLayout = signal(
     typeof window !== 'undefined'
       ? window.matchMedia('(max-width: 768px)').matches
       : false,
   );
 
-  /** Resolves how many cook labels should be shown for the current recipe. */
+  /**
+   * Selects the active recipe.
+   *
+   * Priority:
+   * 1. Recipe selected in the app
+   * 2. First generated recipe
+   * 3. Recipe restored from browser storage
+   */
+  protected readonly selectedRecipe = computed(
+    () =>
+      this.recipeGeneration.selectedRecipe() ??
+      this.recipeGeneration.generatedRecipes()[0] ??
+      this.restoredRecipe() ??
+      null,
+  );
+
+  /**
+   * Number of people cooking.
+   */
   private readonly cookingPersons = computed(() =>
     Math.max(
       1,
@@ -50,62 +113,52 @@ export class PreparationPageComponent {
     ),
   );
 
-  /** Selects the active recipe either from the explicit selection or the latest generated result list. */
-  protected readonly selectedRecipe = computed(
-    () =>
-      this.recipeGeneration.selectedRecipe() ??
-      this.recipeGeneration.generatedRecipes()[0] ??
-      null,
-  );
-
+  /**
+   * Back navigation.
+   */
   protected readonly backLinkLabel =
-    this.source === 'cookbook' ? 'Back to cookbook' : 'Recipe results';
+    this.source === 'cookbook'
+      ? 'Back to cookbook'
+      : 'Recipe results';
 
   protected readonly backLinkTarget =
-    this.source === 'cookbook' ? '/cookbook' : '/results';
+    this.source === 'cookbook'
+      ? '/cookbook'
+      : '/results';
 
   protected readonly backLinkAriaLabel =
     this.source === 'cookbook'
       ? 'Back to cookbook'
       : 'Back to recipe results';
 
-  /** Builds the visible preference tags from the current recipe and the last submitted request. */
+  /**
+   * Recipe preference tags.
+   */
   protected readonly selectedPreferenceTags = computed(() =>
     buildPreparationPreferenceTags(this.selectedRecipe()),
   );
 
-  /** Formats nutritional values for the preparation sidebar without inventing fallback recipe data. */
+  /**
+   * Nutrition facts.
+   */
   protected readonly nutritionFacts = computed(() =>
-    buildNutritionFacts(this.selectedRecipe()?.nutrition?.perPortion ?? null),
+    buildNutritionFacts(
+      this.selectedRecipe()?.nutrition?.perPortion ?? null,
+    ),
   );
 
-  /** Calculates macro energy percentages and exposes actual per-portion and total nutrition. */
+  /**
+   * Macro nutrition.
+   */
   protected readonly macroNutrition = computed(() =>
-    buildMacroNutrition(this.selectedRecipe()?.nutrition ?? null),
+    buildMacroNutrition(
+      this.selectedRecipe()?.nutrition ?? null,
+    ),
   );
 
-  /** Groups assigned preparation tasks by cook for the optional helper checklist. */
-  protected readonly helperTasks = computed(() =>
-    Array.from({ length: this.cookingPersons() }, (_, index) => ({
-      cook: index + 1,
-      label: AVAILABLE_COOK_LABELS[index],
-      tasks: this.preparationDirections().filter(
-        (step) => step.assignedCook === index + 1,
-      ),
-    })),
-  );
-
-  /** Exposes the formatted cook count for the header area. */
-  protected readonly cookingPersonsLabel = computed(() =>
-    this.cookingPersons(),
-  );
-
-  /** Limits the visible cook labels to the number of active cooks. */
-  protected readonly cookLabelSources = computed(() =>
-    getCookLabelSources(this.cookingPersons()),
-  );
-
-  /** Maps the raw recipe step text into display rows without altering the original instructions. */
+  /**
+   * Preparation directions.
+   */
   protected readonly preparationDirections = computed(() =>
     buildPreparationDirections(
       this.selectedRecipe(),
@@ -113,82 +166,238 @@ export class PreparationPageComponent {
     ),
   );
 
-  /** Splits the ingredient display into user-provided and extra ingredients. */
+  /**
+   * Cooking person labels.
+   */
+  protected readonly cookingPersonsLabel = computed(
+    () => this.cookingPersons(),
+  );
+
+  protected readonly cookLabelSources = computed(() =>
+    getCookLabelSources(this.cookingPersons()),
+  );
+
+  /**
+   * Helper tasks.
+   */
+  protected readonly helperTasks = computed(() =>
+    Array.from(
+      { length: this.cookingPersons() },
+      (_, index) => ({
+        cook: index + 1,
+        label: AVAILABLE_COOK_LABELS[index],
+        tasks: this.preparationDirections().filter(
+          (step) => step.assignedCook === index + 1,
+        ),
+      }),
+    ),
+  );
+
+  /**
+   * Ingredient columns.
+   */
   protected readonly ingredientColumns = computed(() =>
     buildIngredientColumns(this.selectedRecipe()),
   );
 
-  /** Registers resize listeners and restores the persisted like state for the active recipe. */
   constructor() {
     if (typeof window !== 'undefined') {
       this.registerMobileLayoutListener();
     }
 
+    /**
+     * Save the active recipe whenever it changes.
+     */
+    effect(() => {
+      const recipe = this.selectedRecipe();
+
+      if (recipe) {
+        this.saveSelectedRecipe(recipe);
+      }
+    });
+
+    /**
+     * Restore the heart state for the active recipe.
+     */
     effect(() => {
       this.syncLikedState();
     });
   }
 
-  /** Toggles the liked state for the currently selected recipe and persists the like in Supabase. */
-  protected toggleLike(): void {
+  /**
+   * Reads the previously opened recipe from localStorage.
+   */
+  private loadStoredRecipe(): GeneratedRecipe | null {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    try {
+      const stored = window.localStorage.getItem(
+        SELECTED_RECIPE_STORAGE_KEY,
+      );
+
+      if (!stored) {
+        return null;
+      }
+
+      const parsed: unknown = JSON.parse(stored);
+
+      if (
+        !parsed ||
+        typeof parsed !== 'object' ||
+        !('title' in parsed) ||
+        typeof parsed.title !== 'string' ||
+        !('id' in parsed)
+      ) {
+        return null;
+      }
+
+      return parsed as GeneratedRecipe;
+    } catch (error) {
+      console.error(
+        'Could not restore selected recipe:',
+        error,
+      );
+
+      return null;
+    }
+  }
+
+  /**
+   * Saves the selected recipe in localStorage.
+   */
+  private saveSelectedRecipe(
+    recipe: GeneratedRecipe,
+  ): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(
+        SELECTED_RECIPE_STORAGE_KEY,
+        JSON.stringify(recipe),
+      );
+    } catch (error) {
+      console.error(
+        'Could not save selected recipe:',
+        error,
+      );
+    }
+  }
+
+  /**
+   * Toggles the like for the current recipe.
+   */
+  protected async toggleLike(): Promise<void> {
     const recipe = this.selectedRecipe();
 
-    if (!recipe) {
+    if (!recipe || this.isSavingLike()) {
       return;
     }
 
     const nextValue = !this.isLiked();
 
-    this.applyLikeState(recipe.title, nextValue);
-    this.persistRecipeLike(recipe, nextValue);
+    if (!nextValue) {
+      // Existing database function only supports adding likes.
+      // Do not pretend that a database like was removed.
+      return;
+    }
+
+    this.isSavingLike.set(true);
+
+    try {
+      await this.cookbookStore.likeRecipe(recipe);
+
+      this.applyLikeState(recipe.title, true);
+    } catch (error) {
+      console.error('Could not save like:', error);
+    } finally {
+      this.isSavingLike.set(false);
+    }
   }
 
-  /** Toggles the mobile ingredient accordion. */
+  /**
+   * Mobile ingredient accordion.
+   */
   protected toggleIngredients(): void {
-    this.ingredientsCollapsed.update((value) => !value);
-  }
-
-  /** Toggles the mobile directions accordion. */
-  protected toggleDirections(): void {
-    this.directionsCollapsed.update((value) => !value);
-  }
-
-  /** Builds the localStorage key used to remember whether a recipe was liked. */
-  private getLikedRecipeStorageKey(recipeTitle: string): string {
-    return `liked-recipe:${recipeTitle.trim().toLowerCase()}`;
-  }
-
-  /** Subscribes to the mobile breakpoint and tears the listener down on destroy. */
-  private registerMobileLayoutListener(): void {
-    const mediaQuery = window.matchMedia('(max-width: 768px)');
-
-    const updateMobileLayout = (
-      event: MediaQueryList | MediaQueryListEvent,
-    ): void => this.isMobileLayout.set(event.matches);
-
-    updateMobileLayout(mediaQuery);
-
-    mediaQuery.addEventListener('change', updateMobileLayout);
-
-    this.destroyRef.onDestroy(() =>
-      mediaQuery.removeEventListener('change', updateMobileLayout),
+    this.ingredientsCollapsed.update(
+      (value) => !value,
     );
   }
 
-  /** Synchronizes the current recipe's liked state from localStorage. */
+  /**
+   * Mobile directions accordion.
+   */
+  protected toggleDirections(): void {
+    this.directionsCollapsed.update(
+      (value) => !value,
+    );
+  }
+
+  /**
+   * LocalStorage key for liked recipes.
+   */
+  private getLikedRecipeStorageKey(
+    recipeTitle: string,
+  ): string {
+    return `liked-recipe:${recipeTitle.trim().toLowerCase()}`;
+  }
+
+  /**
+   * Registers the mobile layout listener.
+   */
+  private registerMobileLayoutListener(): void {
+    const mediaQuery = window.matchMedia(
+      '(max-width: 768px)',
+    );
+
+    const updateMobileLayout = (
+      event: MediaQueryList | MediaQueryListEvent,
+    ): void => {
+      this.isMobileLayout.set(event.matches);
+    };
+
+    updateMobileLayout(mediaQuery);
+
+    mediaQuery.addEventListener(
+      'change',
+      updateMobileLayout,
+    );
+
+    this.destroyRef.onDestroy(() => {
+      mediaQuery.removeEventListener(
+        'change',
+        updateMobileLayout,
+      );
+    });
+  }
+
+  /**
+   * Restores the local heart state.
+   */
   private syncLikedState(): void {
     const recipe = this.selectedRecipe();
 
-    const isLiked =
+    const liked =
       !!recipe &&
       typeof window !== 'undefined' &&
       this.isRecipeLiked(recipe.title);
 
-    this.isLiked.set(isLiked);
+    this.isLiked.set(liked);
   }
 
-  /** Checks localStorage for the persisted like state of a recipe title. */
-  private isRecipeLiked(recipeTitle: string): boolean {
+  /**
+   * Checks whether this browser liked the recipe.
+   */
+  private isRecipeLiked(
+    recipeTitle: string,
+  ): boolean {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
     return (
       window.localStorage.getItem(
         this.getLikedRecipeStorageKey(recipeTitle),
@@ -196,37 +405,36 @@ export class PreparationPageComponent {
     );
   }
 
-  /** Persists the liked state for the active recipe title in localStorage. */
+  /**
+   * Saves the local liked state.
+   */
   private persistLikedState(
     recipeTitle: string,
     nextValue: boolean,
   ): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     window.localStorage.setItem(
       this.getLikedRecipeStorageKey(recipeTitle),
       String(nextValue),
     );
   }
 
-  /** Updates the local liked state and mirrors it to localStorage when available. */
+  /**
+   * Updates the heart and localStorage.
+   */
   private applyLikeState(
     recipeTitle: string,
     nextValue: boolean,
   ): void {
     this.isLiked.set(nextValue);
 
-    if (typeof window !== 'undefined') {
-      this.persistLikedState(recipeTitle, nextValue);
-    }
-  }
-
-  /** Persists a positive like toggle to Supabase. */
-  private persistRecipeLike(
-    recipe: GeneratedRecipe,
-    nextValue: boolean,
-  ): void {
-    if (nextValue) {
-      void this.cookbookStore.likeRecipe(recipe);
-    }
+    this.persistLikedState(
+      recipeTitle,
+      nextValue,
+    );
   }
 }
 
@@ -240,7 +448,9 @@ type IngredientColumns = {
   extraIngredients: string[];
 };
 
-/** Builds the visible preference tags for the preparation page. */
+/**
+ * Builds recipe preference tags.
+ */
 function buildPreparationPreferenceTags(
   recipe: GeneratedRecipe | null,
 ): string[] {
@@ -255,9 +465,13 @@ function buildPreparationPreferenceTags(
   return tags;
 }
 
-/** Builds the nutrition sidebar values from the selected recipe. */
+/**
+ * Builds nutrition facts.
+ */
 function buildNutritionFacts(
-  recipeNutrition: RecipeNutrition['perPortion'] | null,
+  recipeNutrition:
+    | RecipeNutrition['perPortion']
+    | null,
 ): NutritionFact[] {
   if (!recipeNutrition) {
     return createEmptyNutritionFacts();
@@ -269,16 +483,19 @@ function buildNutritionFacts(
       recipeNutrition.calories,
       'kcal',
     ),
+
     createNutritionFact(
       'Protein',
       recipeNutrition.protein_g,
       'g',
     ),
+
     createNutritionFact(
       'Fat',
       recipeNutrition.fat_g,
       'g',
     ),
+
     createNutritionFact(
       'Carbs',
       recipeNutrition.carbs_g,
@@ -287,7 +504,9 @@ function buildNutritionFacts(
   ];
 }
 
-/** Builds a single labeled nutrition display value. */
+/**
+ * Creates one nutrition value.
+ */
 function createNutritionFact(
   label: string,
   value: number | null,
@@ -299,19 +518,29 @@ function createNutritionFact(
   };
 }
 
-/** Builds the empty nutrition placeholder values. */
+/**
+ * Creates empty nutrition placeholders.
+ */
 function createEmptyNutritionFacts(): NutritionFact[] {
-  return ['Energy', 'Protein', 'Fat', 'Carbs'].map(
-    (label) =>
-      createNutritionFact(
-        label,
-        null,
-        label === 'Energy' ? 'kcal' : 'g',
-      ),
+  return [
+    'Energy',
+    'Protein',
+    'Fat',
+    'Carbs',
+  ].map((label) =>
+    createNutritionFact(
+      label,
+      null,
+      label === 'Energy'
+        ? 'kcal'
+        : 'g',
+    ),
   );
 }
 
-/** Limits the cook labels to the number of active cooks. */
+/**
+ * Limits cook labels.
+ */
 function getCookLabelSources(
   cookingPersons: number,
 ): string[] {
@@ -324,43 +553,59 @@ function getCookLabelSources(
   );
 }
 
-/** Displays structured step assignments and falls back to a single cook for older stored recipes. */
+/**
+ * Builds preparation directions.
+ */
 function buildPreparationDirections(
   recipe: GeneratedRecipe | null,
   activeCookLabels: string[],
 ) {
   const details = recipe?.stepDetails ?? [];
 
-  return (recipe?.steps ?? []).map((step, index) => {
-    const detail = details[index];
+  return (recipe?.steps ?? []).map(
+    (step, index) => {
+      const detail = details[index];
 
-    const assignedCook = Math.min(
-      Math.max(
-        1,
-        detail?.assignedCook ?? 1,
-      ),
-      activeCookLabels.length || 1,
-    );
+      const assignedCook = Math.min(
+        Math.max(
+          1,
+          detail?.assignedCook ?? 1,
+        ),
+        activeCookLabels.length || 1,
+      );
 
-    return {
-      number: index + 1,
-      title:
-        detail?.title || `Step ${index + 1}`,
-      text:
-        detail?.description || step.trim(),
-      assignedCook,
-      parallelizable:
-        detail?.parallelizable ?? false,
-      durationMinutes:
-        detail?.durationMinutes ?? null,
-      cookLabelSource:
-        activeCookLabels[assignedCook - 1] ??
-        AVAILABLE_COOK_LABELS[0],
-    };
-  });
+      return {
+        number: index + 1,
+
+        title:
+          detail?.title ||
+          `Step ${index + 1}`,
+
+        text:
+          detail?.description ||
+          step.trim(),
+
+        assignedCook,
+
+        parallelizable:
+          detail?.parallelizable ?? false,
+
+        durationMinutes:
+          detail?.durationMinutes ?? null,
+
+        cookLabelSource:
+          activeCookLabels[
+            assignedCook - 1
+          ] ??
+          AVAILABLE_COOK_LABELS[0],
+      };
+    },
+  );
 }
 
-/** Splits the ingredient display into user and extra columns. */
+/**
+ * Builds ingredient columns.
+ */
 function buildIngredientColumns(
   recipe: GeneratedRecipe | null,
 ): IngredientColumns {
@@ -368,6 +613,7 @@ function buildIngredientColumns(
     return {
       yourIngredients:
         recipe?.userIngredients ?? [],
+
       extraIngredients:
         recipe?.extraIngredients ?? [],
     };
@@ -378,7 +624,9 @@ function buildIngredientColumns(
   );
 }
 
-/** Checks whether the recipe already separates user and extra ingredients. */
+/**
+ * Checks for separated ingredients.
+ */
 function hasExplicitIngredientColumns(
   recipe: GeneratedRecipe | null,
 ): boolean {
@@ -388,7 +636,9 @@ function hasExplicitIngredientColumns(
   );
 }
 
-/** Splits a single ingredient list into two display columns. */
+/**
+ * Splits ingredients into two columns.
+ */
 function splitRecipeIngredients(
   ingredients: string[],
 ): IngredientColumns {
@@ -400,12 +650,15 @@ function splitRecipeIngredients(
   return {
     yourIngredients:
       ingredients.slice(0, splitIndex),
+
     extraIngredients:
       ingredients.slice(splitIndex),
   };
 }
 
-/** Maps a raw preparation time string to the three UI-facing time categories. */
+/**
+ * Determines cooking time category.
+ */
 function getCookingTimeCategory(
   prepTime: string,
 ): 'Quick' | 'Medium' | 'Complex' {
@@ -428,7 +681,9 @@ function getCookingTimeCategory(
   return 'Complex';
 }
 
-/** Formats nutrition values for display while keeping missing values explicit. */
+/**
+ * Formats nutrition values.
+ */
 function formatNutritionValue(
   value: number | null,
   unit: string,
@@ -443,7 +698,9 @@ function formatNutritionValue(
   return `${value}${unit}`;
 }
 
-/** Uses macro calorie factors (4/4/9) to calculate energy shares without inventing missing values. */
+/**
+ * Calculates macro nutrition.
+ */
 function buildMacroNutrition(
   nutrition: RecipeNutrition | null,
 ) {
@@ -486,14 +743,17 @@ function buildMacroNutrition(
   return definitions.map(
     ({ label, key, factor }) => ({
       label,
+
       portion: formatNutritionValue(
         portion?.[key] ?? null,
         'g',
       ),
+
       total: formatNutritionValue(
         total?.[key] ?? null,
         'g',
       ),
+
       percent:
         macroCalories > 0
           ? Math.round(
