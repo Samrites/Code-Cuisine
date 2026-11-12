@@ -2,16 +2,18 @@ import { computed, Injectable, signal } from '@angular/core';
 
 import type {
   GeneratedRecipe,
-  RecipeGenerationPreferences,
   StoredCookbookRecipe,
 } from '../models/recipe.model';
 
-import { getSupabaseConfig } from '../config/supabase.config';
 import { normalizeStoredRecipe } from './recipe-storage.utils';
 
-type DatabaseRecipe = Record<string, unknown> & {
-  id: number | string;
-};
+type N8nRecipeRow = Record<string, unknown>;
+
+const N8N_RECIPES_URL =
+  'https://join-ai-issue-collector.app.n8n.cloud/webhook/code-cuisine-recipes';
+
+const N8N_ACTIONS_URL =
+  'https://join-ai-issue-collector.app.n8n.cloud/webhook/code-cuisine-final-clean-test';
 
 @Injectable({
   providedIn: 'root',
@@ -43,9 +45,6 @@ export class CookbookStoreService {
     void this.refreshRecipes();
   }
 
-  /**
-   * Returns recipes belonging to the selected cuisine.
-   */
   recipesByCuisine(slug: string): StoredCookbookRecipe[] {
     const normalizedSlug = normalizeCuisineSlug(slug);
 
@@ -55,58 +54,86 @@ export class CookbookStoreService {
     );
   }
 
-  /**
-   * Loads all saved recipes from Supabase.
-   */
   async refreshRecipes(): Promise<void> {
-    const config = getSupabaseConfig();
-
-    if (!config) {
-      this.recipesState.set([]);
-      this.loadStatusState.set('unconfigured');
-      return;
-    }
-
     this.loadStatusState.set('loading');
 
     try {
-      const response = await fetch(
-        `${config.url}/rest/v1/recipes?select=*&order=created_at.desc&limit=500`,
-        {
-          headers: {
-            apikey: config.anonKey,
-          },
-        },
-      );
+      const response = await fetch(N8N_RECIPES_URL, {
+        method: 'GET',
+      });
 
       if (!response.ok) {
         throw new Error(
-          `Supabase read failed (${response.status})`,
+          `n8n cookbook read failed (${response.status})`,
         );
       }
 
-      const rows = (await response.json()) as DatabaseRecipe[];
+      const data: unknown = await response.json();
+      const rows = extractRecipeRows(data);
 
       const saved = rows
-        .map((row) =>
-          normalizeStoredRecipe(String(row.id), {
+        .map((row) => {
+          const recipeId =
+            readString(row['recipe_id']) ||
+            readString(row['id']);
+
+          return normalizeStoredRecipe(recipeId, {
             ...row,
 
             cuisineSlug: normalizeCuisineSlug(
               readString(row['cuisine']),
             ),
 
-            prepTimeMinutes: row['cooking_time'],
-            cooking_time: row['cooking_time'],
+            prepTimeMinutes:
+              row['prep_time'] ??
+              row['cooking_time'] ??
+              0,
 
-            steps: row['instructions'],
-            instructions: row['instructions'],
+            cooking_time:
+              row['cooking_time'] ??
+              row['prep_time'] ??
+              0,
 
-            cookCount: row['helpers'],
+            steps: parseJsonValue(row['instructions'], []),
 
-            likes: row['likes'] ?? 0,
-          }),
-        )
+            instructions: parseJsonValue(
+              row['instructions'],
+              [],
+            ),
+
+            stepDetails: parseJsonValue(
+              row['step_details'],
+              [],
+            ),
+
+            ingredients: parseJsonValue(
+              row['ingredients'],
+              [],
+            ),
+
+            userIngredients: parseJsonValue(
+              row['user_ingredients'],
+              [],
+            ),
+
+            extraIngredients: parseJsonValue(
+              row['extra_ingredients'],
+              [],
+            ),
+
+            nutrition: parseJsonValue(
+              row['nutrition'],
+              null,
+            ),
+
+            cookCount: readNumber(
+              row['cook_count'] ?? row['helpers'],
+              0,
+            ),
+
+            likes: readNumber(row['likes'], 0),
+          });
+        })
         .filter(
           (recipe): recipe is StoredCookbookRecipe =>
             recipe !== null,
@@ -115,161 +142,62 @@ export class CookbookStoreService {
       this.recipesState.set(saved);
       this.loadStatusState.set('ready');
     } catch (error) {
-      console.error('Supabase cookbook read failed', error);
+      console.error('n8n cookbook read failed:', error);
 
       this.recipesState.set([]);
       this.loadStatusState.set('error');
     }
   }
 
-  /**
-   * Saves newly generated recipes in Supabase.
-   */
-  async saveGeneratedRecipes(
-    recipes: GeneratedRecipe[],
-    preferences: RecipeGenerationPreferences | null,
-  ): Promise<void> {
-    const config = getSupabaseConfig();
-
-    if (!config) {
-      this.saveStatusState.set('unconfigured');
-      return;
-    }
-
-    this.saveStatusState.set('saving');
-
-    try {
-      const payload = recipes
-        .filter((recipe) => recipe.source !== 'library')
-        .map((recipe) => ({
-          title: recipe.title,
-
-          description: recipe.description,
-
-          cuisine: resolveCuisineSlug(recipe, preferences),
-
-          cooking_time:
-            recipe.prepTimeMinutes ??
-            parsePreparationMinutes(recipe.prepTime),
-
-          servings: preferences?.portions ?? 2,
-
-          helpers:
-            recipe.cookCount ??
-            preferences?.persons ??
-            1,
-
-          ingredients: buildStoredIngredients(recipe),
-
-          instructions: buildStoredInstructions(recipe),
-
-          nutrition: recipe.nutrition ?? null,
-
-          likes: 0,
-        }));
-
-      if (payload.length > 0) {
-        const response = await fetch(
-          `${config.url}/rest/v1/recipes`,
-          {
-            method: 'POST',
-            headers: {
-              apikey: config.anonKey,
-              'Content-Type': 'application/json',
-              Prefer: 'return=minimal',
-            },
-            body: JSON.stringify(payload),
-          },
-        );
-
-        if (!response.ok) {
-          throw new Error(
-            `Supabase save failed (${response.status})`,
-          );
-        }
-      }
-
-      this.saveStatusState.set('saved');
-
-      await this.refreshRecipes();
-    } catch (error) {
-      console.error('Supabase cookbook save failed', error);
-
-      this.saveStatusState.set('error');
-
-      throw error;
-    }
-  }
-
-  /**
-   * Saves a like permanently in Supabase.
-   *
-   * Uses the SQL function:
-   * public.like_recipe(recipe_id bigint)
-   */
   async likeRecipe(recipe: GeneratedRecipe): Promise<void> {
-    const config = getSupabaseConfig();
+    const recipeId = String(recipe.id ?? '').trim();
 
-    if (!config) {
-      console.error('Supabase is not configured.');
-      return;
-    }
-
-    const recipeId = Number(recipe.id);
-
-    if (!Number.isSafeInteger(recipeId) || recipeId <= 0) {
-      console.error(
-        'Cannot save like: invalid database recipe ID.',
-        recipe.id,
-      );
+    if (!recipeId) {
+      console.error('Cannot save like: recipe ID is missing.');
       return;
     }
 
     try {
-      const response = await fetch(
-        `${config.url}/rest/v1/rpc/like_recipe`,
-        {
-          method: 'POST',
-          headers: {
-            apikey: config.anonKey,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            recipe_id: recipeId,
-          }),
+      const response = await fetch(N8N_ACTIONS_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      );
+        body: JSON.stringify({
+          action: 'likeRecipe',
+          recipeId,
+        }),
+      });
 
       if (!response.ok) {
-        const errorText = await response.text();
+        const message = await response.text();
 
         throw new Error(
-          `Supabase like failed (${response.status}): ${errorText}`,
+          `n8n like request failed (${response.status}): ${message}`,
         );
       }
 
-      const newLikes = (await response.json()) as number | null;
+      const data: unknown = await response.json();
 
-      if (newLikes === null) {
-        throw new Error(
-          `Recipe ${recipeId} was not found in Supabase.`,
+      const newLikes =
+        isRecord(data) && typeof data['likes'] === 'number'
+          ? data['likes']
+          : null;
+
+      if (newLikes !== null) {
+        this.recipesState.update((recipes) =>
+          recipes.map((storedRecipe) =>
+            String(storedRecipe.id) === recipeId
+              ? {
+                  ...storedRecipe,
+                  likes: newLikes,
+                }
+              : storedRecipe,
+          ),
         );
+      } else {
+        await this.refreshRecipes();
       }
-
-      // Update the displayed like count immediately.
-      this.recipesState.update((recipes) =>
-        recipes.map((storedRecipe) =>
-          String(storedRecipe.id) === String(recipeId)
-            ? {
-                ...storedRecipe,
-                likes: newLikes,
-              }
-            : storedRecipe,
-        ),
-      );
-
-      // Reload all recipes to keep cookbook pages synchronized.
-      await this.refreshRecipes();
     } catch (error) {
       console.error('Could not save recipe like:', error);
       throw error;
@@ -277,102 +205,30 @@ export class CookbookStoreService {
   }
 }
 
-/**
- * Builds ingredient data for Supabase.
- */
-function buildStoredIngredients(
-  recipe: GeneratedRecipe,
-): Array<{
-  name: string;
-  source: 'user' | 'extra';
-}> {
-  const userIngredients =
-    recipe.userIngredients?.filter(Boolean) ?? [];
-
-  const extraIngredients =
-    recipe.extraIngredients?.filter(Boolean) ?? [];
-
-  if (
-    userIngredients.length > 0 ||
-    extraIngredients.length > 0
-  ) {
-    return [
-      ...userIngredients.map((ingredient) => ({
-        name: ingredient,
-        source: 'user' as const,
-      })),
-
-      ...extraIngredients.map((ingredient) => ({
-        name: ingredient,
-        source: 'extra' as const,
-      })),
-    ];
+function extractRecipeRows(data: unknown): N8nRecipeRow[] {
+  if (Array.isArray(data)) {
+    return data.filter(isRecord);
   }
 
-  return recipe.ingredients
-    .filter(Boolean)
-    .map((ingredient) => ({
-      name: ingredient,
-      source: 'user' as const,
-    }));
-}
-
-/**
- * Builds instruction data for Supabase.
- */
-function buildStoredInstructions(
-  recipe: GeneratedRecipe,
-): Array<
-  | string
-  | {
-      title: string;
-      description: string;
-      assignedCook: number;
-      parallelizable: boolean;
-      durationMinutes: number | null;
-    }
-> {
-  if (recipe.stepDetails?.length) {
-    return recipe.stepDetails.map((step) => ({
-      title: step.title,
-      description: step.description,
-      assignedCook: step.assignedCook,
-      parallelizable: step.parallelizable,
-      durationMinutes: step.durationMinutes,
-    }));
+  if (!isRecord(data)) {
+    return [];
   }
 
-  return recipe.steps.filter(Boolean);
-}
-
-/**
- * Resolves the cuisine category.
- */
-function resolveCuisineSlug(
-  recipe: GeneratedRecipe,
-  preferences: RecipeGenerationPreferences | null,
-): string {
-  const preferenceCuisine =
-    normalizeCuisineSlug(preferences?.cuisine);
-
-  if (preferenceCuisine) {
-    return preferenceCuisine;
+  if (Array.isArray(data['recipes'])) {
+    return data['recipes'].filter(isRecord);
   }
 
-  const recipeCuisine =
-    normalizeCuisineSlug(recipe.cuisineSlug);
+  if (Array.isArray(data['data'])) {
+    return data['data'].filter(isRecord);
+  }
 
-  return recipeCuisine || 'fusion';
+  return [];
 }
 
-/**
- * Normalizes cuisine names.
- */
 function normalizeCuisineSlug(
   value: string | null | undefined,
 ): string {
-  const normalized =
-    (value ?? '').trim().toLowerCase();
+  const normalized = (value ?? '').trim().toLowerCase();
 
   const aliases: Record<string, string> = {
     it: 'italian',
@@ -394,18 +250,54 @@ function normalizeCuisineSlug(
   return aliases[normalized] ?? normalized;
 }
 
-/**
- * Safely reads string values.
- */
 function readString(value: unknown): string {
   return typeof value === 'string' ? value : '';
 }
 
-/**
- * Reads preparation time in minutes.
- */
-function parsePreparationMinutes(prepTime: string): number {
-  const minutes = Number.parseInt(prepTime, 10);
+function readNumber(
+  value: unknown,
+  fallback: number,
+): number {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
 
-  return Number.isFinite(minutes) ? minutes : 0;
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return fallback;
+}
+
+function parseJsonValue<T>(
+  value: unknown,
+  fallback: T,
+): T {
+  if (value === null || value === undefined) {
+    return fallback;
+  }
+
+  if (typeof value !== 'string') {
+    return value as T;
+  }
+
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function isRecord(
+  value: unknown,
+): value is Record<string, unknown> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value)
+  );
 }

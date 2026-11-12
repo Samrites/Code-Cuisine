@@ -1,14 +1,23 @@
 # Code à Cuisine
 
-Code à Cuisine is an Angular recipe generator that allows users to enter ingredients, select cooking preferences, generate recipe suggestions with AI, and save generated recipes in a Supabase-backed cookbook.
+Code à Cuisine is an Angular recipe application that allows users to enter ingredients, select cooking preferences, generate AI-powered recipe suggestions and save generated recipes in a cookbook.
 
 ## Stack
 
-* Angular 21
-* Supabase
-* Supabase Edge Functions
-* Google Gemini for recipe generation
-* Supabase database for cookbook persistence
+- Angular 21
+- n8n
+- Google Gemini
+- n8n Data Tables
+
+## Architecture
+
+The application currently uses:
+
+```text
+Angular → n8n → Google Gemini → n8n Data Table
+```
+
+n8n is the backend layer between the Angular frontend, Google Gemini and the recipe storage.
 
 ## Local setup
 
@@ -24,7 +33,7 @@ npm install
 npm start
 ```
 
-3. Configure the public Supabase connection in:
+3. Configure the n8n webhook in:
 
 ```text
 public/api-config.js
@@ -34,123 +43,112 @@ Example:
 
 ```js
 window.__CODE_CUISINE_API__ = {
-  recipeWebhookUrl: 'https://YOUR_PROJECT.supabase.co/functions/v1/generate-recipes'
-};
-
-window.__CODE_CUISINE_SUPABASE__ = {
-  url: 'https://YOUR_PROJECT.supabase.co',
-  anonKey: 'YOUR_PUBLIC_PUBLISHABLE_KEY'
+  recipeWebhookUrl: 'https://YOUR-N8N-INSTANCE/webhook/YOUR-RECIPE-WEBHOOK'
 };
 ```
 
-Only the public Supabase publishable key is used in the frontend. Secret or service-role keys must not be stored in the frontend.
+Sensitive credentials such as the Google Gemini API key must not be stored in the Angular frontend or committed to GitHub. They are configured securely in n8n.
 
 ## Frontend flow
 
 1. Users enter ingredients on `/generate-recipe`.
 2. Users choose portions, helpers, cuisine, cooking time and dietary preferences on `/preferences`.
 3. `/loading` starts recipe generation through `RecipeGenerationService`.
-4. The frontend sends the request to the Supabase Edge Function `generate-recipes`.
-5. The Edge Function handles AI recipe generation.
-6. Successful recipes are normalized and displayed on `/results`.
-7. Generated recipes are stored in the Supabase `recipes` table.
-8. Stored recipes are displayed in `/cookbook` and the corresponding cookbook categories.
+4. Angular sends the request to the n8n recipe-generation webhook.
+5. n8n validates and prepares the input.
+6. Google Gemini generates three structured recipe suggestions.
+7. n8n processes the generated recipes.
+8. Generated recipes are stored in the n8n Data Table.
+9. Recipes are returned to Angular and displayed on `/results`.
+10. Stored recipes are loaded through the n8n cookbook endpoint and displayed on `/cookbook`.
 
 ## Important files
 
-* `src/app/services/recipe-generation.service.ts`
-  Handles recipe generation through the Supabase Edge Function.
+- `src/app/services/recipe-generation.service.ts`  
+  Handles recipe generation through the n8n webhook.
 
-* `src/app/services/cookbook-store.service.ts`
-  Handles loading and storing cookbook recipes with Supabase.
+- `src/app/services/cookbook-store.service.ts`  
+  Handles loading cookbook recipes through n8n.
 
-* `src/app/pages/generate-recipe-page/*`
+- `src/app/pages/generate-recipe-page/*`  
   Ingredient input and autocomplete.
 
-* `src/app/pages/preferences-page/*`
+- `src/app/pages/preferences-page/*`  
   Portion, helper, cuisine, cooking-time and dietary preference selection.
 
-* `src/app/pages/results-page/*`
+- `src/app/pages/results-page/*`  
   Generated recipe overview.
 
-* `src/app/pages/preparation-page/*`
+- `src/app/pages/preparation-page/*`  
   Full recipe detail and preparation view.
 
-* `public/api-config.js`
-  Runtime configuration for the public Supabase URL, publishable key and recipe-generation endpoint.
+- `public/api-config.js`  
+  Runtime configuration for the n8n endpoints.
+
+- `n8n/`  
+  Contains the exported n8n workflow for the project.
 
 ## Recipe generation
 
-The application expects the AI generation service to return three structured recipes.
+The application expects the AI workflow to return three structured recipes.
 
-A generated recipe can contain information such as:
+Recipe information can include:
 
-```json
-{
-  "title": "Recipe title",
-  "description": "Short description",
-  "prepTime": "30 min",
-  "cookCount": 2,
-  "ingredients": [
-    "500 g pasta",
-    "2 tomatoes"
-  ],
-  "userIngredients": [
-    "500 g pasta"
-  ],
-  "extraIngredients": [
-    "2 tomatoes"
-  ],
-  "steps": [
-    "Step 1",
-    "Step 2"
-  ],
-  "nutrition": {
-    "perPortion": {
-      "calories": 530,
-      "protein_g": 22,
-      "carbs_g": 61,
-      "fat_g": 18
-    },
-    "total": {
-      "calories": 1060,
-      "protein_g": 44,
-      "carbs_g": 122,
-      "fat_g": 36
-    }
-  }
-}
-```
+- title
+- description
+- cuisine
+- ingredients
+- preparation instructions
+- preparation time
+- cooking time
+- servings
+- helpers
+- nutrition information
+- diet information
+- user ingredients
+- additional ingredients
 
-## Supabase
+## n8n Backend
 
-Supabase provides the backend services used by the application.
+n8n provides the backend workflows used by Code à Cuisine.
 
-### Database
+### Recipe Generation
 
-Main table:
+The Angular frontend sends ingredients and cooking preferences to an n8n webhook.
 
-```text
-recipes
-```
+The workflow:
 
-Generated recipes are stored after successful generation and are then available in the cookbook.
+1. Receives the Angular request.
+2. Extracts and maps the input.
+3. Validates the request.
+4. Prepares the AI input.
+5. Sends the request to Google Gemini.
+6. Parses the structured response.
+7. Processes the generated recipes.
+8. Stores the recipes.
+9. Returns the recipes to Angular.
 
-### Row Level Security
+### Cookbook
 
-Row Level Security is enabled for the `recipes` table.
+Stored recipes are loaded through a separate n8n GET webhook.
 
-The application uses the public `anon` role for permitted frontend operations. Appropriate RLS policies must therefore exist for the operations used by the application.
+The workflow reads the recipes from the n8n Data Table, formats them for Angular and returns the recipe list to the frontend.
 
-### Edge Function
+### Data Table
 
-Recipe generation is handled through:
+The project uses the n8n Data Table:
 
 ```text
-/functions/v1/generate-recipes
+code_cuisine_recipes
 ```
 
-The Angular frontend sends recipe-generation requests to this Supabase Edge Function.
+It stores generated recipe information for the cookbook.
+
+## Google Gemini
+
+Google Gemini is used for AI recipe generation.
+
+Gemini is called from inside the n8n workflow instead of directly from Angular. This keeps AI credentials outside the frontend application.
 
 ## Responsive design
 
@@ -158,34 +156,35 @@ The application supports desktop, widescreen, tablet and mobile layouts.
 
 Responsive corrections include:
 
-* limiting visual elements so they do not overlap text on widescreen displays
-* keeping the page background at full viewport height
-* reducing unnecessary horizontal overflow
-* adapting content positioning for mobile layouts
-* keeping typography consistent across responsive breakpoints
+- preventing visual elements from overlapping text
+- keeping backgrounds at full viewport height
+- reducing unnecessary horizontal overflow
+- adapting content positioning for mobile layouts
+- keeping typography consistent across responsive breakpoints
 
 ## Language
 
-The user interface should use one consistent language.
+The current target language of the user interface is English.
 
-The current target is English for:
+This includes:
 
-* navigation
-* buttons
-* labels
-* recipe sections
-* generated recipe content
+- navigation
+- buttons
+- labels
+- recipe sections
+- generated recipe content
 
-Generated AI responses should therefore also be requested in English.
+Generated AI recipes should therefore also be returned in English.
 
 ## Development notes
 
-* At least one ingredient is required before continuing to preferences.
-* Recipe generation expects three recipe suggestions.
-* Generated recipes should be saved to Supabase after successful generation.
-* Saved recipes should appear in the cookbook.
-* The Impressum page remains linked from the home page.
-* Supabase is used for the current backend and recipe persistence.
+- At least one ingredient is required before continuing to preferences.
+- Recipe generation expects three recipe suggestions.
+- Recipe generation is handled through n8n.
+- Google Gemini is connected through n8n.
+- Generated recipes are stored in an n8n Data Table.
+- Stored recipes should appear in the cookbook.
+- The Impressum page remains linked from the home page.
 
 ## Build
 
@@ -211,20 +210,21 @@ npm run build:ftp
 
 Before submitting the project, check:
 
-* no errors in the browser console
-* recipe generation works
-* generated recipes are saved
-* saved recipes appear in the cookbook
-* responsive layouts do not create unnecessary horizontal scrolling
-* widescreen layouts fill the complete viewport height
-* all visible UI text uses a consistent language
+- no errors appear in the browser console
+- recipe generation works
+- n8n receives the recipe-generation request
+- Google Gemini returns three recipes
+- generated recipes are stored in the n8n Data Table
+- stored recipes appear in the cookbook
+- responsive layouts work correctly
+- all visible UI text uses a consistent language
 
 ## Project status
 
-The project currently uses:
+Current backend architecture:
 
 ```text
-Angular → Supabase Edge Function → AI generation → Supabase database
+Angular → n8n → Google Gemini → n8n Data Table
 ```
 
-Supabase is the active backend architecture for recipe generation and cookbook persistence.
+n8n is the active backend for recipe generation and cookbook persistence.

@@ -2,10 +2,8 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom, timeout } from 'rxjs';
 
-import { CookbookStoreService } from './cookbook-store.service';
 import { IngredientDraftStateService } from './ingredient-draft-state.service';
 import { getApiConfig } from '../config/api.config';
-import { getSupabaseConfig } from '../config/supabase.config';
 
 import {
   getRecipeGenerationErrorMessage,
@@ -84,7 +82,6 @@ type IngredientCollections = {
 @Injectable({ providedIn: 'root' })
 export class RecipeGenerationService {
   private readonly http = inject(HttpClient);
-  private readonly cookbookStore = inject(CookbookStoreService);
   private readonly ingredientDraftState = inject(
     IngredientDraftStateService,
   );
@@ -221,7 +218,7 @@ export class RecipeGenerationService {
   }
 
   /**
-   * Requests recipes from the Supabase Edge Function.
+   * Requests recipes from the n8n webhook.
    */
   private requestRecipes(
     request: RecipeGenerationRequest,
@@ -231,14 +228,6 @@ export class RecipeGenerationService {
         new Error(
           'The recipe generation service is not configured yet.',
         ),
-      );
-    }
-
-    const config = getSupabaseConfig();
-
-    if (!config) {
-      return Promise.reject(
-        new Error('Supabase is not configured.'),
       );
     }
 
@@ -287,7 +276,7 @@ export class RecipeGenerationService {
           body,
           {
             headers: {
-              apikey: config.anonKey,
+              'Content-Type': 'application/json',
             },
           },
         )
@@ -389,17 +378,7 @@ export class RecipeGenerationService {
     this.selectedRecipe.set(null);
     this.generationStatus.set('success');
     this.pendingRequest.set(null);
-
     this.ingredientDraftState.resetIngredients();
-
-    void this.cookbookStore
-      .saveGeneratedRecipes(recipes, preferences)
-      .catch((error: unknown) => {
-        console.error(
-          'Generated recipes could not be saved to the cookbook.',
-          error,
-        );
-      });
   }
 
   /**
@@ -466,7 +445,7 @@ function getRequestErrorMessage(
       error.status === 401 ||
       error.status === 403
     ) {
-      return 'Supabase rejected the recipe request. Please check the public API key and Edge Function access settings.';
+      return 'n8n rejected the recipe request. Please check that the workflow is published and the webhook URL is correct.';
     }
 
     if (error.status === 429) {
@@ -1277,7 +1256,7 @@ function buildStepDetails(
 }
 
 /**
- * Adapts Supabase Edge Function fields
+ * Adapts n8n recipe response fields
  * to the Angular recipe model.
  */
 function adaptEdgeRecipe(
